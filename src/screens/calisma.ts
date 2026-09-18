@@ -73,7 +73,8 @@ export function render(root: HTMLElement, subject?: string): () => void {
     </div>
     <div class="ink-surface" id="surface"></div>
     <div class="toolbar">
-      <button id="clear" class="ghost">Temizle</button>
+      <button id="undo" class="ghost" disabled>↶ Geri al</button>
+      <button id="clear" class="ghost" disabled>Temizle</button>
       <span class="spacer"></span>
       <button id="check" class="primary" disabled>Kontrol et</button>
     </div>
@@ -84,6 +85,19 @@ export function render(root: HTMLElement, subject?: string): () => void {
   const resultBox = root.querySelector<HTMLElement>('#result')!;
   const stageLabel = root.querySelector<HTMLElement>('#stageLabel')!;
   const checkBtn = root.querySelector<HTMLButtonElement>('#check')!;
+  const undoBtn = root.querySelector<HTMLButtonElement>('#undo')!;
+  const clearBtn = root.querySelector<HTMLButtonElement>('#clear')!;
+
+  /**
+   * Düğme durumları tek yerden. Değerlendirme yapıldıktan sonra hamle
+   * düzenlenemez — sonuç FSRS'e yazıldı, geri alınırsa puanla ekran uyuşmaz.
+   */
+  const syncButtons = () => {
+    const has = strokes.length > 0;
+    undoBtn.disabled = checked || !has;
+    clearBtn.disabled = !has;
+    checkBtn.disabled = !checked && !has;
+  };
 
   const surface = new InkSurface(host, { desynchronized: true });
   const strokes: InkStroke[] = [];
@@ -155,10 +169,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
             rawMoves: pointer.stats.rawMoves - mark.rawMoves,
             canceled: reason === 'cancel',
           });
-          checkBtn.disabled = false;
         }
         current = [];
         surface.clearLive();
+        syncButtons();
       },
     },
     { penOnly: false, usePredicted: true },
@@ -197,13 +211,20 @@ export function render(root: HTMLElement, subject?: string): () => void {
     redraw();
   });
 
-  root.querySelector('#clear')!.addEventListener('click', () => {
+  undoBtn.addEventListener('click', () => {
+    if (checked || !strokes.length) return;
+    strokes.pop();
+    redraw();
+    syncButtons();
+  });
+
+  clearBtn.addEventListener('click', () => {
     strokes.length = 0;
     checked = false;
-    checkBtn.disabled = true;
     checkBtn.textContent = 'Kontrol et';
     resultBox.innerHTML = '';
     redraw();
+    syncButtons();
   });
 
   checkBtn.addEventListener('click', () => {
@@ -229,6 +250,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
     checked = true;
     checkBtn.textContent = 'Devam';
+    syncButtons();
 
     // Atlanan/taşan bölgeleri mürekkebin üstüne bindir.
     surface.ctx.live.drawImage(result.overlay, 0, 0);
