@@ -8,7 +8,7 @@ import { APP_VERSION } from './types';
 
 type Screen = {
   title: string;
-  render(root: HTMLElement): () => void;
+  render(root: HTMLElement, param?: string): () => void;
 };
 
 type Route = {
@@ -16,6 +16,8 @@ type Route = {
   /** Alt gezinmede hangi sekme yanacak. */
   tab: string;
   load?: () => Promise<Screen['render']>;
+  /** Yol öneki eşleşmesi: '#/calis/ш' → param 'ш'. */
+  prefix?: string;
   inline?: (root: HTMLElement) => () => void;
 };
 
@@ -54,6 +56,16 @@ const routes: Record<string, Route> = {
   '/records': { title: 'Kayıtlar ve yedek', tab: 'profile', load: async () => (await import('./screens/records')).render },
   '/dev/mascots': { title: 'Maskot kadrosu', tab: 'profile', load: async () => (await import('./dev/mascots')).render },
 };
+
+/** Parametre alan rotalar — tam eşleşme yerine önek eşleşmesi. */
+const prefixRoutes: Route[] = [
+  {
+    title: 'Çalışma',
+    tab: 'path',
+    prefix: '/calis/',
+    load: async () => (await import('./screens/calisma')).render,
+  },
+];
 
 const app = document.querySelector<HTMLElement>('#app')!;
 app.innerHTML = `
@@ -113,7 +125,15 @@ async function route(): Promise<void> {
   main.innerHTML = '';
   main.scrollTop = 0;
 
-  const entry = routes[path];
+  let param: string | undefined;
+  let entry = routes[path];
+  if (!entry) {
+    const hit = prefixRoutes.find((r) => path.startsWith(r.prefix!));
+    if (hit) {
+      entry = hit;
+      param = decodeURIComponent(path.slice(hit.prefix!.length));
+    }
+  }
   if (!entry) {
     title.textContent = 'Bulunamadı';
     back.hidden = false;
@@ -123,11 +143,11 @@ async function route(): Promise<void> {
     return;
   }
 
-  title.textContent = entry.title;
+  title.textContent = param ? `${entry.title} · ${param}` : entry.title;
   back.hidden = path === '/';
   markTab(entry.tab);
 
-  cleanup = entry.inline ? entry.inline(main) : (await entry.load!())(main);
+  cleanup = entry.inline ? entry.inline(main) : (await entry.load!())(main, param);
 }
 
 function markTab(active: string): void {

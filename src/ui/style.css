@@ -1276,3 +1276,77 @@ nav.tabs .tab-badge {
   opacity: 0.72;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Çalışma ekranı ─────────────────────────────────────────────────────── */
+
+.practice-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 2px 4px;
+  flex: 0 0 auto;
+}
+
+.practice-top .back {
+  padding: 7px 13px;
+}
+
+.practice-title {
+  flex: 1;
+  text-align: center;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.practice-title b {
+  display: block;
+  font-family: 'Bad Script', cursive;
+  font-size: 30px;
+  font-weight: 400;
+}
+
+.practice-title span {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.66;
+}
+
+.result-card {
+  margin-top: 0;
+}
+
+.result-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.result-head b {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.result-score {
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--blue);
+}
+
+/* Patika düğümü bağlantısı — sarmalayıcı düzeni bozmasın. */
+.path-open {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.path-open:active .node {
+  transform: scale(0.96);
+}
+
+.path-open .node--current:active {
+  transform: scale(1.04);
+}

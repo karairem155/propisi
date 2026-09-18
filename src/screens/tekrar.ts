@@ -71,8 +71,9 @@ export function render(root: HTMLElement): () => void {
     if (disposed) return;
 
     const weak = weakSpots(cards);
+    const first = queue.cards[0]?.subject;
     root.innerHTML =
-      (queue.total ? queueCard(queue) : emptyCard()) +
+      (queue.total ? queueCard(queue, first) : emptyCard()) +
       weakCard(weak, queue.total === 0) +
       footerCard(goal, streak);
   })();
@@ -82,7 +83,7 @@ export function render(root: HTMLElement): () => void {
   };
 }
 
-function queueCard(queue: Queue): string {
+function queueCard(queue: Queue, first?: string): string {
   const items = Object.entries(queue.counts)
     .filter(([, n]) => n > 0)
     .map(([k, n]) => `<div class="queue-item"><b>${n}</b><span>${BUCKETS[k] ?? k}</span></div>`)
@@ -97,8 +98,13 @@ function queueCard(queue: Queue): string {
       <h3>Tekrar zamanı</h3>
       <p class="fine" style="margin:0 0 12px">Bildiklerini pekiştir, daha da güçlen.</p>
       <div class="queue-grid">${items}</div>
-      <button class="primary" style="width:100%" disabled>Tekrara başla · ${queue.total}</button>
-      <p class="fine">Alıştırma ekranları Faz 1'de açılıyor — harf çizim verisi gerekiyor.</p>
+      ${
+        first
+          ? `<a class="btn primary" style="display:block;width:100%;text-align:center;text-decoration:none"
+               href="#/calis/${encodeURIComponent(first)}">Tekrara başla · ${queue.total}</a>`
+          : '<button class="primary" style="width:100%" disabled>Tekrara başla</button>'
+      }
+      <p class="fine">Şu an şekil örtüşmesine bakılıyor; yön ve hamle sırası glyph verisiyle gelecek.</p>
     </div>`;
 }
 

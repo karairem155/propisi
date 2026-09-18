@@ -17,6 +17,8 @@ type NodeState = 'locked' | 'current' | 'done' | 'fading';
 
 type PathNode = {
   kind: 'element' | 'letter' | 'join' | 'word' | 'checkpoint';
+  /** Çalışma ekranına geçerken kullanılan kimlik. */
+  subject?: string;
   art: string;
   label: string;
   sub?: string;
@@ -63,6 +65,7 @@ export function render(root: HTMLElement): () => void {
             const s = stateOf(el.id);
             return {
               kind: 'element',
+              subject: el.id,
               art: el.mascot ?? 'cubuk',
               label: el.name,
               sub: el.ru,
@@ -80,6 +83,7 @@ export function render(root: HTMLElement): () => void {
             const s = stateOf(l.ch);
             return {
               kind: 'letter',
+              subject: l.ch,
               art: l.ch,
               label: l.ch,
               ...(l.hint ? { sub: l.hint } : l.derivedFrom ? { sub: `${l.derivedFrom} türevi` } : {}),
@@ -230,9 +234,14 @@ function row(node: PathNode, x: number): string {
   if (node.state === 'done') flag = '<span class="flag flag--done">✓</span>';
   if (node.state === 'fading') flag = `<span class="flag flag--fading">${node.due ?? ''}</span>`;
 
+  const body = `<div class="${cls.join(' ')}">${nodeArt(node)}${flag}</div>
+    <div class="node-label">${node.label}${node.sub ? `<small>${node.sub}</small>` : ''}</div>`;
+
+  // Kilitli düğüm ve kontrol noktası henüz açılmıyor.
+  const open = node.state !== 'locked' && node.subject && node.kind !== 'checkpoint';
+
   return `<div class="path-row path-row--${node.state}" style="transform:translateX(${x}px)">
-    <div class="${cls.join(' ')}">${nodeArt(node)}${flag}</div>
-    <div class="node-label">${node.label}${node.sub ? `<small>${node.sub}</small>` : ''}</div>
+    ${open ? `<a class="path-open" href="#/calis/${encodeURIComponent(node.subject!)}">${body}</a>` : body}
   </div>`;
 }
 
