@@ -3,7 +3,7 @@
 //
 // DIKKAT: SHELL listesi elle yazildi. vite.config.ts cikti adlarini sabit tutuyor
 // (hash yok) — yeni bir ekran/parca eklersen bu listeyi VE VERSION'u guncelle.
-const VERSION = "propisi-fb9fd291";
+const VERSION = "propisi-1bcf9ab0";
 const SHELL = [
   "./",
   "./art/badge-100-reviews.webp",
@@ -56,6 +56,7 @@ const SHELL = [
   "./js/records.js",
   "./js/sandbox.js",
   "./js/scheduler.js",
+  "./js/stats.js",
   "./js/tekrar.js",
   "./js/test-latency.js",
   "./js/test-scribble.js",

@@ -15,6 +15,7 @@
 import { buildQueue, allCards, type Queue } from '../srs/scheduler';
 import { ELEMENTS, LEVELS } from '../data/curriculum';
 import { getSetting } from '../db/db';
+import { statsView, type StatsView } from '../srs/stats';
 import { art } from '../ui/assets';
 import { mascot } from '../ui/mascot';
 
@@ -62,11 +63,11 @@ export function render(root: HTMLElement): () => void {
   let disposed = false;
 
   void (async () => {
-    const [queue, cards, goal, streak] = await Promise.all([
+    const [queue, cards, goal, stats] = await Promise.all([
       buildQueue(),
       allCards(),
       getSetting<number>('dailyGoal', 20),
-      getSetting<number>('streak', 0),
+      statsView(),
     ]);
     if (disposed) return;
 
@@ -75,7 +76,7 @@ export function render(root: HTMLElement): () => void {
     root.innerHTML =
       (queue.total ? queueCard(queue, first) : emptyCard()) +
       weakCard(weak, queue.total === 0) +
-      footerCard(goal, streak);
+      footerCard(goal, stats);
   })();
 
   return () => {
@@ -156,14 +157,24 @@ function weakCard(weak: Weak[], focus: boolean): string {
     </div>`;
 }
 
-function footerCard(goal: number, streak: number): string {
+function footerCard(goal: number, stats: StatsView): string {
+  const pct = Math.min(100, Math.round((stats.today / Math.max(1, goal)) * 100));
+  const peak = Math.max(1, ...stats.week.map((d) => d.count));
   return `
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-        <span style="font-weight:800">🔥 ${streak} gün</span>
-        <span class="fine">0 / ${goal} kart</span>
+        <span style="font-weight:800">🔥 ${stats.streak} gün${stats.best > stats.streak ? ` <span class="fine">· en iyi ${stats.best}</span>` : ''}</span>
+        <span class="fine">${stats.today} / ${goal} kart</span>
       </div>
-      <div class="goal-bar"><i style="width:0%"></i></div>
+      <div class="goal-bar"><i style="width:${pct}%"></i></div>
+      <div class="week-strip">
+        ${stats.week
+          .map(
+            (d) => `<i style="height:${Math.max(3, Math.round((d.count / peak) * 26))}px;
+              opacity:${d.count ? 1 : 0.28}" title="${d.day}: ${d.count}"></i>`,
+          )
+          .join('')}
+      </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
         <span class="fine">Sert limit yok — hedef yalnızca öneri.</span>
         <a href="#/ilerleme" style="color:var(--sky-ink);font-weight:800;font-size:13px;text-decoration:none">

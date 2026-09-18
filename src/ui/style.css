@@ -1350,3 +1350,19 @@ nav.tabs .tab-badge {
 .path-open .node--current:active {
   transform: scale(1.04);
 }
+
+/* Son 7 günün mini çubukları (Tekrar alt kartı). */
+.week-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 28px;
+  margin-top: 8px;
+}
+
+.week-strip i {
+  flex: 1;
+  background: var(--mint);
+  border-radius: 3px;
+  display: block;
+}

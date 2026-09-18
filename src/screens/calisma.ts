@@ -25,6 +25,8 @@ import { scoreShape, shapeMessage, type ShapeResult } from '../grading/shape';
 import { ensureCard, review, buildQueue } from '../srs/scheduler';
 import { Rating } from '../srs/cards';
 import { getSetting, saveAttempt } from '../db/db';
+import { recordReview } from '../srs/stats';
+import { speak, speechStatus } from '../audio/speech';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
 import { ELEMENTS, levelOfLetter } from '../data/curriculum';
 
@@ -66,7 +68,8 @@ export function render(root: HTMLElement, subject?: string): () => void {
         <b>${target}</b>
         <span id="stageLabel">Kademe 1</span>
       </div>
-      <button id="peek" class="ghost" style="min-height:38px;padding:8px 14px">Kılavuz</button>
+      <button id="say" class="ghost" style="min-height:38px;padding:8px 13px" title="Harfi dinle">🔊</button>
+      <button id="peek" class="ghost" style="min-height:38px;padding:8px 13px">Kılavuz</button>
     </div>
     <div class="ink-surface" id="surface"></div>
     <div class="toolbar">
@@ -176,6 +179,19 @@ export function render(root: HTMLElement, subject?: string): () => void {
   })();
 
   // — eylemler —
+  const sayBtn = root.querySelector<HTMLButtonElement>('#say')!;
+  sayBtn.addEventListener('click', () => {
+    if (!speak(target)) {
+      // Ses yoksa sessizce başarısız olmasın — durumu söyle (brief 9.2/13).
+      sayBtn.textContent = '—';
+      sayBtn.title = 'Cihazda ru-RU ses bulunamadı';
+      setTimeout(() => {
+        sayBtn.textContent = '🔊';
+      }, 1600);
+    }
+  });
+  if (!speechStatus().ready) sayBtn.style.opacity = '.45';
+
   root.querySelector('#peek')!.addEventListener('click', () => {
     peeking = !peeking;
     redraw();
@@ -270,6 +286,8 @@ export function render(root: HTMLElement, subject?: string): () => void {
         },
       }),
     ]);
+
+    await recordReview();
 
     const queue = await buildQueue();
     if (!disposed && queue.total > 0) {
