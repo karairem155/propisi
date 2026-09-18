@@ -35,6 +35,13 @@ export type WordItem = {
 
 export type LetterItem = {
   ch: string;
+  /**
+   * Seslendirmede okunacak metin. Boşsa harfin kendisi okunur — ama o zaman TTS
+   * harfin ADINI söylüyor (п → "pe", р → "er"). Öğrenirken gereken harfin
+   * ÇIKARDIĞI ses; Rus alfabe kitaplarının yaptığı gibi ünsüzü açık heceyle
+   * gösteriyoruz (п → "па", р → "ра"). Ünlülerde ad ile ses aynı, alan boş.
+   */
+  say?: string;
   /** Türev harf mi (ё, й) — kendi dersi var ama taban harfe bağlı. */
   derivedFrom?: string;
   /** Kısa Türkçe ipucu; brief 4.2 commonMistakes'in özeti. */
@@ -73,12 +80,12 @@ export const LEVELS: Level[] = [
     ru: 'и ш п р т г',
     letters: [
       { ch: 'и', hint: '2 tepe' },
-      { ch: 'ш', hint: '3 tepe — altta ayırt edici çizgi' },
-      { ch: 'п' },
-      { ch: 'р', hint: 'inen kuyruk' },
-      { ch: 'т', hint: '3 tepe — üstte ayırt edici çizgi' },
-      { ch: 'г' },
-      { ch: 'й', derivedFrom: 'и', hint: 'и + kısa işareti' },
+      { ch: 'ш', say: 'ша', hint: '3 tepe — altta ayırt edici çizgi' },
+      { ch: 'п', say: 'па' },
+      { ch: 'р', say: 'ра', hint: 'inen kuyruk' },
+      { ch: 'т', say: 'та', hint: '3 tepe — üstte ayırt edici çizgi' },
+      { ch: 'г', say: 'га' },
+      { ch: 'й', say: 'ай', derivedFrom: 'и', hint: 'и + kısa işareti' },
     ],
     joins: ['ши', 'иш', 'ти', 'пи', 'ир'],
     words: [
@@ -94,7 +101,7 @@ export const LEVELS: Level[] = [
     tag: 'Seviye 2',
     name: 'Saat yönünün tersi',
     ru: 'л м я',
-    letters: [{ ch: 'л', hint: '2 tepe' }, { ch: 'м', hint: '3 tepe' }, { ch: 'я' }],
+    letters: [{ ch: 'л', say: 'ла', hint: '2 tepe' }, { ch: 'м', say: 'ма', hint: '3 tepe' }, { ch: 'я' }],
     joins: ['ли', 'ми', 'мя', 'ля'],
     words: [
       { ru: 'мир', tr: 'dünya · barış', stress: 1 },
@@ -108,7 +115,7 @@ export const LEVELS: Level[] = [
     tag: 'Seviye 3',
     name: 'İlmek bazlı',
     ru: 'у ц щ ч',
-    letters: [{ ch: 'у' }, { ch: 'ц' }, { ch: 'щ', hint: 'ш + kuyruk' }, { ch: 'ч' }],
+    letters: [{ ch: 'у' }, { ch: 'ц', say: 'ца' }, { ch: 'щ', say: 'ща', hint: 'ш + kuyruk' }, { ch: 'ч', say: 'ча' }],
     joins: ['чи', 'щи', 'цу', 'лу'],
     words: [
       { ru: 'мяч', tr: 'top', stress: 1 },
@@ -124,12 +131,12 @@ export const LEVELS: Level[] = [
     name: 'Oval ve yarım oval',
     ru: 'с е о а д б',
     letters: [
-      { ch: 'с' },
+      { ch: 'с', say: 'са' },
       { ch: 'е' },
       { ch: 'о' },
       { ch: 'а' },
-      { ch: 'д', hint: 'inen ilmek' },
-      { ch: 'б', hint: 'çıkan kuyruk' },
+      { ch: 'д', say: 'да', hint: 'inen ilmek' },
+      { ch: 'б', say: 'ба', hint: 'çıkan kuyruk' },
       { ch: 'ё', derivedFrom: 'е', hint: 'е + iki nokta' },
     ],
     joins: ['ос', 'ао', 'од', 'се', 'ба'],
@@ -146,7 +153,7 @@ export const LEVELS: Level[] = [
     tag: 'Seviye 5',
     name: 'Küçük ilmekli',
     ru: 'ь ъ ы в',
-    letters: [{ ch: 'ь' }, { ch: 'ъ' }, { ch: 'ы', hint: 'ь + и' }, { ch: 'в' }],
+    letters: [{ ch: 'ь', say: 'мягкий знак' }, { ch: 'ъ', say: 'твёрдый знак' }, { ch: 'ы', hint: 'ь + и' }, { ch: 'в', say: 'ва' }],
     joins: ['ыв', 'вь', 'сь'],
     words: [
       { ru: 'вода', tr: 'su', stress: 3 },
@@ -160,7 +167,7 @@ export const LEVELS: Level[] = [
     tag: 'Seviye 6',
     name: 'Yön değişimi',
     ru: 'н ю к',
-    letters: [{ ch: 'н' }, { ch: 'ю' }, { ch: 'к' }],
+    letters: [{ ch: 'н', say: 'на' }, { ch: 'ю' }, { ch: 'к', say: 'ка' }],
     joins: ['нн', 'юк', 'ко'],
     words: [
       { ru: 'окно', tr: 'pencere', stress: 3 },
@@ -174,7 +181,7 @@ export const LEVELS: Level[] = [
     tag: 'Seviye 7',
     name: 'Saat yönü',
     ru: 'з э ж х ф',
-    letters: [{ ch: 'з' }, { ch: 'э' }, { ch: 'ж' }, { ch: 'х' }, { ch: 'ф' }],
+    letters: [{ ch: 'з', say: 'за' }, { ch: 'э' }, { ch: 'ж', say: 'жа' }, { ch: 'х', say: 'ха' }, { ch: 'ф', say: 'фа' }],
     joins: ['же', 'зо', 'ху'],
     words: [
       { ru: 'хлеб', tr: 'ekmek', stress: 2 },

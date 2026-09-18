@@ -144,7 +144,9 @@ async function route(): Promise<void> {
     return;
   }
 
-  title.textContent = param ? `${entry.title} · ${param}` : entry.title;
+  // Parametre ham kimlik olabiliyor (el-kryuchok); okunur adı ekranın kendisi
+  // gösteriyor, üst başlığa basmıyoruz.
+  title.textContent = entry.title;
   back.hidden = path === '/';
   markTab(entry.tab);
 

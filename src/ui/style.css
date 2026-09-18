@@ -1366,3 +1366,10 @@ nav.tabs .tab-badge {
   border-radius: 3px;
   display: block;
 }
+
+/* Element başlığı harf değil, kursif fontla basılmamalı. */
+.practice-title b.as-text {
+  font-family: 'Nunito', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+}

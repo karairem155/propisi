@@ -268,34 +268,44 @@ function buildOverlay(
   return out;
 }
 
-/** Puanı Türkçe geri bildirime çevirir. */
-export function shapeMessage(r: ShapeResult): { title: string; detail: string } {
+/**
+ * Puanı Türkçe geri bildirime çevirir.
+ * `noun` element derslerinde "harf" dememek için — orada çizilen şey bir şekil.
+ */
+export function shapeMessage(
+  r: ShapeResult,
+  noun: 'harf' | 'şekil' = 'harf',
+): { title: string; detail: string } {
   // Atlanan bölüm en ciddi hata — önce o söylenir.
   if (r.missedSection) {
     const where =
       r.weakestAt < 0.34 ? 'başındaki' : r.weakestAt > 0.66 ? 'sonundaki' : 'ortasındaki';
     return {
       title: 'Bir bölümü atladın',
-      detail: `Harfin ${where} kısmı boş kaldı — kehribar bölgeye bak. Harfin tamamını geç.`,
+      detail: `${cap(noun)}in ${where} kısmı boş kaldı — kehribar bölgeye bak. Tamamını geç.`,
     };
   }
   if (r.score >= 0.85) {
-    return { title: 'Çok iyi', detail: 'Harfin üstünden temiz geçtin.' };
+    return { title: 'Çok iyi', detail: `${cap(noun)}in üstünden temiz geçtin.` };
   }
   if (r.recall < 0.65 && r.precision >= 0.7) {
     return {
       title: 'Eksik kaldı',
-      detail: 'Harfin bir kısmını atladın — kehribar bölgeler geçmediğin yerler.',
+      detail: `${cap(noun)}in bir kısmını atladın — kehribar bölgeler geçmediğin yerler.`,
     };
   }
   if (r.precision < 0.6) {
     return {
       title: 'Çizgiden çıktın',
-      detail: 'Mürekkebin çoğu harfin dışında kaldı — mercan bölgeler taşan yerler.',
+      detail: `Mürekkebin çoğu ${noun}in dışında kaldı — mercan bölgeler taşan yerler.`,
     };
   }
   if (r.score >= 0.7) {
     return { title: 'İyi', detail: 'Neredeyse tam — kehribar yerleri de geç.' };
   }
   return { title: 'Tekrar dene', detail: 'Kılavuzun üstünden yavaşça geç.' };
+}
+
+function cap(s: string): string {
+  return s.charAt(0).toLocaleUpperCase('tr') + s.slice(1);
 }

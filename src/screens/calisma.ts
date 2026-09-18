@@ -14,13 +14,13 @@ import { InkSurface } from '../canvas/surface';
 import { attachPointer, type PointerHandle } from '../canvas/pointer';
 import { outlinePath, styleFor } from '../canvas/ink';
 import { drawPaper, DEFAULT_PAPER, type PaperConfig } from '../ui/paper';
+import { ensureGuideFont, measureGuide, targetPainter, type GuideBox } from '../ui/guide';
 import {
-  drawGuide,
-  ensureGuideFont,
-  measureGuide,
-  targetPainter,
-  type GuideBox,
-} from '../ui/guide';
+  elementCount,
+  elementPainter,
+  measureElements,
+  type ElementBox,
+} from '../ui/elements';
 import { scoreShape, shapeMessage, type ShapeResult } from '../grading/shape';
 import { ensureCard, review, buildQueue } from '../srs/scheduler';
 import { Rating } from '../srs/cards';
@@ -28,7 +28,20 @@ import { getSetting, saveAttempt } from '../db/db';
 import { recordReview } from '../srs/stats';
 import { speak, speechStatus } from '../audio/speech';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
-import { ELEMENTS, levelOfLetter } from '../data/curriculum';
+import { ELEMENTS, LEVELS, levelOfLetter } from '../data/curriculum';
+
+/** Ekranda gösterilecek başlık ve seslendirilecek metin. */
+function describe(subject: string): { title: string; sub: string; say: string; element: boolean } {
+  const el = ELEMENTS.find((e) => e.id === subject);
+  if (el) return { title: el.name, sub: el.ru, say: '', element: true };
+
+  for (const lvl of LEVELS) {
+    const l = lvl.letters.find((x) => x.ch === subject);
+    // Ünsüzlerde harfin ADI değil SESİ okunuyor (bkz. curriculum.ts → say).
+    if (l) return { title: l.ch, sub: l.hint ?? lvl.ru, say: l.say ?? l.ch, element: false };
+  }
+  return { title: subject, sub: '', say: subject, element: false };
+}
 
 const INK_COLOR = '#14213d';
 
@@ -60,12 +73,13 @@ function failedChecks(r: ShapeResult): string[] {
 
 export function render(root: HTMLElement, subject?: string): () => void {
   const target = subject ?? 'и';
+  const info = describe(target);
   root.className = 'screen flush';
   root.innerHTML = `
     <div class="practice-top">
       <a class="back" href="#/">✕</a>
       <div class="practice-title">
-        <b>${target}</b>
+        <b class="${info.element ? 'as-text' : ''}">${info.title}</b>
         <span id="stageLabel">Kademe 1</span>
       </div>
       <button id="say" class="ghost" style="min-height:38px;padding:8px 13px" title="Harfi dinle">🔊</button>
@@ -108,6 +122,13 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   let paper: PaperConfig = DEFAULT_PAPER;
   let box: GuideBox | null = null;
+  let elBox: ElementBox | null = null;
+
+  /** Hedef şekli çizen işlev — hem kılavuz hem değerlendirme aynı kaynağı kullanır. */
+  const painter = (): ((ctx: CanvasRenderingContext2D) => void) | null => {
+    if (info.element) return elBox ? elementPainter(target, elBox) : null;
+    return box ? targetPainter(target, box) : null;
+  };
   let stage: 1 | 2 | 3 = 1;
   let peeking = false;
   let checked = false;
@@ -117,8 +138,15 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   const redraw = () => {
     drawPaper(surface.ctx.paper, surface.width, surface.height, paper);
-    if (box) {
-      drawGuide(surface.ctx.paper, target, box, { alpha: guideAlpha() });
+    const alpha = guideAlpha();
+    const paint = painter();
+    if (paint && alpha > 0) {
+      const ctx = surface.ctx.paper;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#1d3f8f';
+      paint(ctx);
+      ctx.restore();
     }
     surface.clearCommitted();
     surface.ctx.committed.fillStyle = INK_COLOR;
@@ -129,6 +157,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   const remeasure = () => {
     box = measureGuide(surface.ctx.paper, target, paper, surface.width, surface.height);
+    if (info.element) {
+      elBox = measureElements(paper, surface.width, box.baseline, elementCount(target));
+    }
     redraw();
   };
   surface.setResizeHandler(remeasure);
@@ -194,8 +225,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   // — eylemler —
   const sayBtn = root.querySelector<HTMLButtonElement>('#say')!;
+  // Elementlerin sesi yok — düğmeyi hiç gösterme.
+  if (info.element) sayBtn.remove();
   sayBtn.addEventListener('click', () => {
-    if (!speak(target)) {
+    if (!speak(info.say)) {
       // Ses yoksa sessizce başarısız olmasın — durumu söyle (brief 9.2/13).
       sayBtn.textContent = '—';
       sayBtn.title = 'Cihazda ru-RU ses bulunamadı';
@@ -232,15 +265,17 @@ export function render(root: HTMLElement, subject?: string): () => void {
       location.hash = '#/';
       return;
     }
-    if (!box || !strokes.length) return;
+    if (!strokes.length) return;
     void grade();
   });
 
   async function grade(): Promise<void> {
+    const paint = painter();
+    if (!paint) return;
     const result = scoreShape({
       width: surface.width,
       height: surface.height,
-      drawTarget: targetPainter(target, box!),
+      drawTarget: paint,
       drawUser: (ctx) => {
         for (const s of strokes) ctx.fill(outlinePath(s.points, styleFor(s.pointerType), true));
       },
@@ -255,7 +290,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
     // Atlanan/taşan bölgeleri mürekkebin üstüne bindir.
     surface.ctx.live.drawImage(result.overlay, 0, 0);
 
-    const msg = shapeMessage(result);
+    const msg = shapeMessage(result, info.element ? 'şekil' : 'harf');
     const checks = failedChecks(result);
     const pct = (v: number) => Math.round(v * 100);
 
@@ -287,7 +322,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       saveAttempt({
         id: newId(),
         ts: Date.now(),
-        target: `letter:${target}`,
+        target: `${info.element ? 'element' : 'letter'}:${target}`,
         stage,
         strokes: strokes.slice(),
         verdict: result.score >= 0.72 ? 'pass' : 'fail',
