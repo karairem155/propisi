@@ -1,0 +1,22 @@
+{
+  "name": "propisi",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Rus el yazısı (прописи) öğrenme uygulaması — iPad + Apple Pencil PWA",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "postbuild": "node tools/gen-sw-shell.mjs"
+  },
+  "dependencies": {
+    "idb": "^8.0.3",
+    "perfect-freehand": "^1.2.3",
+    "ts-fsrs": "^5.4.2"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}

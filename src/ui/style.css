@@ -1,0 +1,1278 @@
+@import './fonts.css';
+
+/* ── Propisi tasarım sistemi ────────────────────────────────────────────────
+   Referans ailesi: kobalt zemin, beyaz yuvarlak kartlar, açık mavi haplar,
+   yuvarlak kalın sans, düz maskotlar.
+
+   Kendi imzamız (referanstan ayrıldığımız yerler):
+   · Bölüm başlıkları mavi zeminin üstünde beyaz duruyor — dolu mavi bar içinde değil
+   · Alt gezinme yüzen bir ada; aktif öğenin arkasında açık mavi hap var
+   · Satır çizgisi dokusu (--rule) bir marka öğesi — el yazısı uygulamasıyız
+   · Maskotlar harfin kendi elemanları (bkz. ui/mascot.ts), genel bloblar değil
+   · Mavi daha derin/indigo, referansın parlak kobaltından farklı
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --blue: #1d3f8f;
+  --blue-deep: #16306e;
+  --blue-lift: #2a55b0;
+  --sky: #c4d9f3;
+  --sky-soft: #e3edfa;
+  --sky-ink: #24509e;
+
+  --card: #ffffff;
+  --paper: #fdfcf8;
+  --ink: #14213d;
+  --muted: #6b7a99;
+  --line: #e2e8f2;
+
+  --amber: #f2a63b;
+  --mint: #35c79a;
+  --coral: #f2705f;
+  --violet: #8e7cf0;
+
+  --warn-bg: #fff4e2;
+  --warn-ink: #8a5216;
+  --ok-bg: #e4f7f0;
+  --ok-ink: #17694f;
+
+  --r-lg: 24px;
+  --r-md: 18px;
+  --r-sm: 12px;
+  --pad: 16px;
+  --nav-h: 76px;
+
+  --shadow: 0 6px 20px rgba(10, 30, 70, 0.14);
+  --shadow-sm: 0 2px 8px rgba(10, 30, 70, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--blue);
+  color: var(--ink);
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+/* ── Üst bar ─────────────────────────────────────────────────────────────── */
+
+header.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px var(--pad) 8px;
+  flex: 0 0 auto;
+  color: #fff;
+}
+
+header.bar h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+header.bar .spacer {
+  flex: 1;
+}
+
+header.bar small {
+  color: rgba(255, 255, 255, 0.62);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+a.back {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 7px 14px;
+  line-height: 1;
+}
+
+a.back[hidden] {
+  display: none;
+}
+
+/* ── Gövde ───────────────────────────────────────────────────────────────── */
+
+main.screen {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 4px var(--pad) calc(var(--nav-h) + 16px);
+  -webkit-overflow-scrolling: touch;
+}
+
+main.screen.flush {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 4px var(--pad) calc(var(--nav-h) + 8px);
+  gap: 12px;
+}
+
+main.screen.flush > .scroll {
+  overflow: auto;
+  flex: 1 1 auto;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  margin: 22px 0 10px;
+  letter-spacing: 0.01em;
+}
+
+h2:first-child {
+  margin-top: 8px;
+}
+
+p {
+  margin: 0 0 12px;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--sky-soft);
+  color: var(--sky-ink);
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+
+/* ── Kartlar ─────────────────────────────────────────────────────────────── */
+
+.card,
+.note,
+.warn,
+.ok {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  margin: 0 0 12px;
+  box-shadow: var(--shadow-sm);
+  font-size: 14px;
+}
+
+.note {
+  color: var(--ink);
+}
+
+.warn {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+.ok {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+
+.warn b,
+.ok b {
+  font-weight: 800;
+}
+
+/* ── Menü ────────────────────────────────────────────────────────────────── */
+
+.menu {
+  display: grid;
+  gap: 12px;
+}
+
+.menu a {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--card);
+  border-radius: var(--r-lg);
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow-sm);
+}
+
+.menu a:active {
+  transform: translateY(1px);
+}
+
+.menu a .txt {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu a b {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.menu a span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+  display: block;
+}
+
+.menu a .go {
+  color: var(--sky-ink);
+  font-weight: 800;
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+
+/* Kart içi yuvarlak maskot rozeti. */
+.badge {
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--sky-soft);
+  display: grid;
+  place-items: center;
+}
+
+/* ── Karşılama ───────────────────────────────────────────────────────────── */
+
+.hero {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Satır çizgisi dokusu — markanın imzası. */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 25px,
+    var(--sky-soft) 25px 26px
+  );
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+}
+
+.hero h3 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.mascot-team {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 10px;
+}
+
+.mascot {
+  display: block;
+  overflow: visible;
+}
+
+/* ── Haplar ──────────────────────────────────────────────────────────────── */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  background: var(--sky);
+  color: var(--sky-ink);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 7px 13px;
+  border-radius: 999px;
+}
+
+.chip.on {
+  background: #fff;
+  color: var(--blue);
+}
+
+/* ── Düğmeler ────────────────────────────────────────────────────────────── */
+
+button,
+.btn {
+  font: inherit;
+  font-weight: 800;
+  color: var(--blue);
+  background: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  min-height: 46px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button.primary {
+  background: var(--blue);
+  color: #fff;
+}
+
+button.ghost {
+  background: var(--sky-soft);
+  color: var(--sky-ink);
+  box-shadow: none;
+}
+
+button.danger {
+  color: var(--coral);
+}
+
+button:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 10px 12px;
+  box-shadow: var(--shadow-sm);
+  flex: 0 0 auto;
+}
+
+.toolbar .spacer {
+  flex: 1;
+}
+
+label.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+label.toggle input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--blue);
+}
+
+.num {
+  width: 92px;
+  min-height: 44px;
+  font: inherit;
+  font-weight: 700;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--sky-soft);
+  color: var(--ink);
+}
+
+/* ── İstatistik kutuları ─────────────────────────────────────────────────── */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.stat {
+  background: var(--card);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat b {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.stat span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Tablo ───────────────────────────────────────────────────────────────── */
+
+.table-card {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 6px 4px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+tr.hit td {
+  background: var(--ok-bg);
+  font-weight: 800;
+}
+
+/* ── Çizim yüzeyi ────────────────────────────────────────────────────────── */
+
+.ink-surface {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 220px;
+  background: var(--paper);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  touch-action: none;
+}
+
+.ink-surface canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 240px;
+}
+
+.split .pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.split .pane h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  padding: 0 4px;
+}
+
+pre.log {
+  background: var(--blue-deep);
+  color: #dce7fb;
+  padding: 14px;
+  border-radius: var(--r-md);
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  max-height: 210px;
+  overflow: auto;
+  margin: 0;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ── Alt gezinme ─────────────────────────────────────────────────────────── */
+
+nav.tabs {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+  width: min(400px, calc(100% - 24px));
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background: var(--blue-deep);
+  border-radius: 999px;
+  padding: 7px;
+  box-shadow: 0 8px 26px rgba(6, 20, 50, 0.4);
+  z-index: 40;
+}
+
+nav.tabs a {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 7px 4px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+nav.tabs a svg {
+  width: 21px;
+  height: 21px;
+  display: block;
+}
+
+nav.tabs a.on {
+  background: var(--sky);
+  color: var(--blue);
+}
+
+@media (max-width: 380px) {
+  nav.tabs a span {
+    display: none;
+  }
+}
+
+main.screen.flush > .scroll {
+  flex: 0 1 auto;
+  max-height: 46%;
+}
+
+/* ── Patika (müfredat haritası) ──────────────────────────────────────────── */
+
+.path-wrap {
+  position: relative;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 4px 0 8px;
+  /* Satırlar translateX ile kaydırılıyor; taşmayı kes. */
+  overflow-x: hidden;
+}
+
+/* İmza zemin: propisi satır çizgileri + eğik çizgiler. */
+.path-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+  background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0 39px,
+      rgba(255, 255, 255, 0.075) 39px 40px
+    ),
+    repeating-linear-gradient(
+      66deg,
+      transparent 0 33px,
+      rgba(255, 255, 255, 0.05) 33px 34px
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.path-wrap > * {
+  position: relative;
+  z-index: 1;
+}
+
+.level-head {
+  margin: 20px 0 6px;
+  text-align: center;
+  color: #fff;
+}
+
+.level-head b {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  opacity: 0.66;
+}
+
+.level-head h3 {
+  margin: 1px 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  font-family: 'Bad Script', 'Nunito', cursive;
+  letter-spacing: 0.02em;
+}
+
+.level-bar {
+  width: 168px;
+  height: 7px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+.level-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mint);
+}
+
+.path-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.path-link {
+  display: block;
+  margin: 0 auto;
+}
+
+.node {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  position: relative;
+  border: 5px solid var(--sky);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.node .art {
+  font-family: 'Bad Script', cursive;
+  font-size: 44px;
+  line-height: 1;
+  color: var(--ink);
+  margin-top: -4px;
+}
+
+.node .art.pair {
+  font-size: 34px;
+}
+
+.node--done {
+  border-color: var(--mint);
+}
+
+.node--fading {
+  border-color: var(--amber);
+}
+
+/* Halka mavi zeminin üstünde duruyor — mavi kenarlık görünmüyordu, beyaz gerek. */
+.node--current {
+  border-color: #fff;
+  border-width: 7px;
+  transform: scale(1.09);
+  animation: nodePulse 2.1s ease-in-out infinite;
+}
+
+@keyframes nodePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5), var(--shadow);
+  }
+  55% {
+    box-shadow: 0 0 0 11px rgba(255, 255, 255, 0), var(--shadow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node--current {
+    animation: none;
+  }
+}
+
+.node--locked {
+  background: #eef2f8;
+  border-color: #d3dce9;
+  box-shadow: none;
+}
+
+.node--locked .art {
+  color: #a8b4c7;
+}
+
+.node--checkpoint {
+  width: 96px;
+  height: 96px;
+  border-width: 6px;
+}
+
+.node .flag {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  min-width: 27px;
+  height: 27px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  border: 2.5px solid #fff;
+  line-height: 1;
+}
+
+.flag--done {
+  background: var(--mint);
+}
+
+.flag--fading {
+  background: var(--amber);
+}
+
+.node-label {
+  text-align: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  max-width: 132px;
+  line-height: 1.25;
+}
+
+.node-label small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.62;
+}
+
+.path-row--locked .node-label {
+  opacity: 0.5;
+}
+
+.path-row--current .node-label {
+  font-weight: 800;
+}
+
+/* ── Görsel yuvaları ─────────────────────────────────────────────────────── */
+
+.art-slot {
+  display: block;
+  border-radius: var(--r-md);
+  object-fit: cover;
+}
+
+.art-slot--empty {
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 1px;
+  border: 2px dashed rgba(20, 33, 61, 0.22);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(20, 33, 61, 0.03) 0 9px,
+    transparent 9px 18px
+  );
+  color: var(--muted);
+  padding: 8px;
+}
+
+.art-slot--empty.art-slot--blue {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.72);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.05) 0 9px,
+    transparent 9px 18px
+  );
+}
+
+.art-slot--empty b {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.art-slot--empty span {
+  font-size: 11px;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.art-slot--empty small {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* ── Kuyruk kartı (Bugün) ────────────────────────────────────────────────── */
+
+.queue-card {
+  background: #fff;
+  border-radius: var(--r-lg);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+
+.queue-card h3 {
+  margin: 0 0 12px;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.queue-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.queue-item {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  background: var(--sky-soft);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+}
+
+.queue-item b {
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-item span {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.overdue-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fdeceb;
+  color: #a8301c;
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.goal-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--sky-soft);
+  overflow: hidden;
+  margin: 6px 0 4px;
+}
+
+.goal-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mint);
+}
+
+/* ── Alfabe ızgarası ─────────────────────────────────────────────────────── */
+
+.letter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+  gap: 8px;
+}
+
+.letter-cell {
+  aspect-ratio: 1;
+  background: #fff;
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.letter-cell span {
+  font-family: 'Bad Script', cursive;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.letter-cell small {
+  position: absolute;
+  top: 4px;
+  left: 7px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+/* Ustalık dolgusu: alttan yükselen bant (FSRS stability). */
+.letter-cell i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--mint);
+  opacity: 0.26;
+}
+
+.letter-cell--locked {
+  background: #eef2f8;
+  box-shadow: none;
+}
+
+.letter-cell--locked span {
+  color: #a8b4c7;
+}
+
+.letter-cell--due {
+  outline: 3px solid var(--amber);
+  outline-offset: -3px;
+}
+
+/* ── Isı haritası / rapor ────────────────────────────────────────────────── */
+
+.bars {
+  display: grid;
+  gap: 9px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(34px, auto) 1fr 42px;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+}
+
+.bar-row em {
+  font-style: normal;
+  font-weight: 800;
+  font-family: 'Bad Script', cursive;
+  font-size: 22px;
+}
+
+.bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--sky-soft);
+  overflow: hidden;
+}
+
+.bar-track i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--coral);
+}
+
+.bar-row b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.empty-hint {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 18px 8px;
+}
+
+/* ── Özet şerit + görünüm anahtarı (Patika) ─────────────────────────────── */
+
+.prog-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.11);
+  border-radius: var(--r-md);
+  padding: 11px 14px;
+  margin-bottom: 10px;
+  text-decoration: none;
+  color: #fff;
+}
+
+.prog-strip > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.prog-strip b {
+  display: block;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.prog-strip span {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.72;
+}
+
+.prog-strip .go {
+  font-size: 20px;
+  font-weight: 800;
+  opacity: 0.72;
+  flex: 0 0 auto;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.13);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 12px;
+}
+
+.segmented button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  box-shadow: none;
+  font-size: 14px;
+}
+
+.segmented button.on {
+  background: #fff;
+  color: var(--blue);
+}
+
+/* ── Sekme rozeti ────────────────────────────────────────────────────────── */
+
+nav.tabs a {
+  position: relative;
+}
+
+nav.tabs .tab-badge {
+  position: absolute;
+  top: 1px;
+  right: calc(50% - 22px);
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--coral);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  border: 2px solid var(--blue-deep);
+}
+
+/* ── Küçük yardımcılar ──────────────────────────────────────────────────── */
+
+.fine {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
+
+.bar-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: -4px 0 4px 43px;
+}
+
+.art-center {
+  margin: 0 auto;
+}
+
+/* Tek harf olmayan konular (element, bağlantı, kelime grubu) düz yazıyla. */
+.bar-name {
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Yardım satırı + rozet vitrini ──────────────────────────────────────── */
+
+.help-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--warn-bg);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  margin-bottom: 10px;
+  color: var(--warn-ink);
+}
+
+.help-row img {
+  flex: 0 0 auto;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+}
+
+.help-row b {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.help-row .fine {
+  color: inherit;
+  opacity: 0.85;
+  margin-top: 3px;
+}
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: 12px 6px;
+  text-align: center;
+}
+
+.badge-cell span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.badge-cell.locked img {
+  filter: grayscale(1);
+  opacity: 0.3;
+}
+
+/* ── Maket uyarlamaları ─────────────────────────────────────────────────── */
+
+/* Kuyruk kartının üstündeki illüstrasyon şeridi (maket 01). */
+.queue-banner {
+  position: relative;
+  margin: -18px -18px 14px;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.queue-banner:empty {
+  display: none;
+}
+
+.queue-banner img {
+  width: 100%;
+  display: block;
+  border-radius: 0;
+}
+
+.queue-banner .overdue-pill {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  margin: 0;
+}
+
+/* Görsel yoksa rozet akışta kalsın. */
+.queue-banner:not(:has(img)) .overdue-pill {
+  position: static;
+  display: inline-flex;
+  margin-bottom: 4px;
+}
+
+.card-link {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  color: var(--sky-ink);
+  font-weight: 800;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+/* Seviye başlığı: çubuk + kesir yan yana (maket 09). */
+.level-meter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.level-meter .level-bar {
+  width: 132px;
+  margin: 0;
+}
+
+.level-meter span {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.72;
+  font-variant-numeric: tabular-nums;
+}
