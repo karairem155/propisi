@@ -15,6 +15,7 @@
 import { optionsFor } from '../data/confusables';
 import { ALPHABET, LEVELS, levelOfLetter } from '../data/curriculum';
 import { ensureCard, review, buildQueue, practiceHref } from '../srs/scheduler';
+import { CONFUSABLES } from '../data/confusables';
 import { Rating } from '../srs/cards';
 import { recordReview } from '../srs/stats';
 import { pushResult, seenSubjects } from '../srs/session';
@@ -176,6 +177,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
     await review(`letter:${target}:read`, rating, score < 1 ? ['shape'] : []);
     await recordReview();
+    // Tanıyabilen için sıradaki adım harf avı: kelime içinde ayırt etmek.
+    // Yalnız karışanı olan harflerde anlamlı.
+    if ((CONFUSABLES[target] ?? []).length) {
+      await ensureCard('letter:hunt', target, levelOfLetter(target)?.id ?? 'g1');
+    }
     pushResult({ subject: target, label: target, score, checks: [], at: Date.now() });
 
     const queue = await buildQueue();

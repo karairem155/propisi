@@ -1545,3 +1545,16 @@ nav.tabs .tab-badge {
   font-size: 15px;
   font-weight: 800;
 }
+
+/* Başlık altı ipucu tek satırda kalsın — içindeki kursif harf satır kırıyordu. */
+.practice-title span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.practice-title span b {
+  font-size: 17px;
+  vertical-align: -2px;
+}

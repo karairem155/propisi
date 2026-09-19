@@ -87,6 +87,7 @@ const PRACTICABLE: CardKind[] = [
   'element:write',
   'word:write',
   'letter:read',
+  'letter:hunt',
   'word:dictation',
 ];
 
@@ -97,6 +98,7 @@ const PRACTICABLE: CardKind[] = [
 export function practiceHref(card: SrsCard): string {
   const sub = encodeURIComponent(card.subject);
   if (card.kind === 'letter:read') return `#/tani/${sub}`;
+  if (card.kind === 'letter:hunt') return `#/av/${sub}`;
   if (card.kind === 'word:dictation') return `#/dikte/${sub}`;
   return `#/calis/${sub}`;
 }
@@ -116,6 +118,7 @@ export type Queue = {
 };
 
 function bucketOf(card: SrsCard): QueueBucket {
+  if (card.kind === 'letter:hunt') return 'letter';
   if (card.kind === 'word:dictation') return 'dictation';
   if (card.kind.startsWith('word')) return 'word';
   if (card.kind === 'join') return 'join';

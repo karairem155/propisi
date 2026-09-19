@@ -10,6 +10,7 @@ import { Rating, State, type Card } from 'ts-fsrs';
 export type CardKind =
   | 'letter:write' // Serbest yazım (Kademe 3)
   | 'letter:read' // El yazısı gösterilir, hangi harf?
+  | 'letter:hunt' // Kelimede o harfi işaretle (ambiguity eğitimi)
   | 'element:write' // Element çizimi
   | 'join' // Harf çiftini yaz
   | 'word:write' // Anlam/ses verilir, el yazısıyla yaz

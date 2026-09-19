@@ -80,6 +80,12 @@ const prefixRoutes: Route[] = [
     prefix: '/dikte/',
     load: async () => (await import('./screens/dikte')).render,
   },
+  {
+    title: 'Harf avı',
+    tab: 'path',
+    prefix: '/av/',
+    load: async () => (await import('./screens/av')).render,
+  },
 ];
 
 const app = document.querySelector<HTMLElement>('#app')!;
