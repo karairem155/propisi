@@ -634,6 +634,39 @@ main.screen.flush > .scroll {
   max-height: 46%;
 }
 
+/*
+ * Kısa ekran koruması.
+ *
+ * Tuval `flex: 1 1 auto; min-height: 220px` ile boşluğun tamamını alıyor.
+ * iPad'de sorun yok — ölçüldü: 820x1180'de tuval 673px, değerlendirme kartı
+ * 183px, yani kartın tamamı görünüyor. Ama kısa ekranda (telefon yatay, küçük
+ * pencere) karta 14 PİKSEL kalıyordu: kullanıcı "Tekrar dene" görüyor,
+ * nedenini göremiyordu. Cursive bilmeyen biri için asıl içerik o kart.
+ *
+ * Yükseklik eşiğinin altında tuvalin asgarisi düşüyor. Paylaşım sayfa
+ * açılırken belirleniyor, değerlendirme sırasında değişmiyor — yani mürekkep
+ * ile kılavuz arasında kayma olmuyor.
+ */
+@media (max-height: 760px) {
+  main.screen.flush {
+    gap: 8px;
+  }
+
+  /* Tuval artık boşluğu YUTMUYOR, kendi asgarisinde duruyor; kalan yer
+     değerlendirme kartının. Sabit asgari vermek yetmiyordu: toplam yükseklik
+     kabı aşınca kartın alt kısmı yüzen sekme çubuğunun arkasına giriyordu. */
+  main.screen.flush .ink-surface {
+    flex: 0 1 auto;
+    min-height: 140px;
+  }
+
+  main.screen.flush > .scroll {
+    flex: 1 1 auto;
+    min-height: 96px;
+    max-height: none;
+  }
+}
+
 /* ── Patika (müfredat haritası) ──────────────────────────────────────────── */
 
 .path-wrap {
@@ -1262,10 +1295,20 @@ nav.tabs .tab-badge {
   display: none;
 }
 
+/*
+ * Kahraman görsel 16:9 idi ve kısa ekranda 508 pikselin 251'ini yiyip
+ * "Tekrara başla" düğmesini katlamanın altına atıyordu — uygulamanın giriş
+ * ekranındaki TEK önemli eylem görünmüyordu. Görsel kırpılıyor: karakterler
+ * ve defter üst-orta bantta, alttaki boş çimen kesiliyor.
+ */
 .queue-banner img {
   width: 100%;
   display: block;
   border-radius: 0;
+  aspect-ratio: auto;
+  height: clamp(110px, 24vh, 190px);
+  object-fit: cover;
+  object-position: center 58%;
 }
 
 .queue-banner .overdue-pill {
