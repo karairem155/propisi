@@ -1438,3 +1438,29 @@ nav.tabs .tab-badge {
   font-size: 13px;
   font-weight: 600;
 }
+
+/* Ders ilerlemesi — kademe kademe noktalar. */
+.step-dots {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  padding: 2px 0 8px;
+  flex: 0 0 auto;
+}
+
+.dot-group {
+  display: flex;
+  gap: 5px;
+}
+
+.step-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.26);
+  display: block;
+}
+
+.step-dots i.on {
+  background: var(--mint);
+}

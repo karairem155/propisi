@@ -1,14 +1,18 @@
-// Çalışma ekranı — kılavuzun üstüne yaz, örtüşmeye göre değerlendirilsin.
+// Çalışma ekranı — bir ders tek çizim değil, bir dizi.
 //
-// v1 kapsamı bilinçli olarak dar: şekil örtüşmesi (grading/shape.ts). Yön, hamle
-// sırası ve tepe sayısı glyph verisi istiyor, o Faz 1'de gelecek ve aynı ekranı
-// yerinden oynatmadan yükseltecek.
+// Brief 7.1 üç kademe tarif ediyor ve "3 kez üst üste hatasız → sonraki kademe"
+// diyor. Ders bu yüzden yedi denemelik bir dizi:
 //
-// Kademe kılavuzun saydamlığıyla temsil ediliyor (brief 7.1):
-//   Kademe 1 — kılavuz belirgin, üstünden geç
-//   Kademe 2 — kılavuz soluyor
-//   Kademe 3 — kılavuz yok, ezberden yaz
-// Kademe kartın tekrar sayısından türüyor; "Kılavuzu göster" ile geçici bakılabilir.
+//   Kademe 1 · 3 kez — kılavuz belirgin, üstünden geç
+//   Kademe 2 · 2 kez — kılavuz soluyor
+//   Kademe 3 · 2 kez — kılavuz YOK, ezberden yaz
+//
+// Başarısız deneme kademeyi ilerletmiyor, tekrarlanıyor. Asıl öğrenme
+// Kademe 3'te oluyor: kılavuz arkada görünmeden yazmak.
+//
+// Değerlendirme şu an şekil örtüşmesi (grading/shape.ts). Yön, hamle sırası ve
+// kalem kalkışı glyph verisi ister; başlangıç noktası denetimi (data/starts.ts)
+// yönün yakalanabilen yarısı.
 
 import { InkSurface } from '../canvas/surface';
 import { attachPointer, type PointerHandle } from '../canvas/pointer';
@@ -41,6 +45,19 @@ import { speak, speechStatus } from '../audio/speech';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
 import { ELEMENTS, LEVELS, findWord, levelOfLetter } from '../data/curriculum';
 
+const INK_COLOR = '#14213d';
+/** Bu puanın altı sayılmaz; kademe ilerlemez. */
+const PASS = 0.72;
+
+type Step = { stage: 1 | 2 | 3; need: number; label: string; alpha: number };
+
+const LESSON: Step[] = [
+  { stage: 1, need: 3, label: 'Kılavuzun üstünden geç', alpha: 0.3 },
+  { stage: 2, need: 2, label: 'Kılavuz soluyor', alpha: 0.13 },
+  { stage: 3, need: 2, label: 'Kılavuz yok — ezberden yaz', alpha: 0 },
+];
+const TOTAL = LESSON.reduce((n, s) => n + s.need, 0);
+
 type Info = {
   title: string;
   sub: string;
@@ -57,7 +74,6 @@ function describe(subject: string): Info {
   if (el) {
     return { title: el.name, sub: el.ru, say: '', element: true, word: false, stress: -1 };
   }
-
   const w = findWord(subject);
   if (w) {
     return {
@@ -69,7 +85,6 @@ function describe(subject: string): Info {
       stress: w.word.stress,
     };
   }
-
   for (const lvl of LEVELS) {
     const l = lvl.letters.find((x) => x.ch === subject);
     // Ünsüzlerde harfin ADI değil SESİ okunuyor (bkz. curriculum.ts → say).
@@ -87,29 +102,16 @@ function describe(subject: string): Info {
   return { title: subject, sub: '', say: subject, element: false, word: false, stress: -1 };
 }
 
-const INK_COLOR = '#14213d';
-
-/** Kademeye göre kılavuz saydamlığı. */
-const STAGE_ALPHA = [0.3, 0.16, 0];
-
-function stageOfReps(reps: number): 1 | 2 | 3 {
-  if (reps >= 6) return 3;
-  if (reps >= 3) return 2;
-  return 1;
-}
-
-/** Örtüşme puanını FSRS notuna çevirir — kullanıcı kendi kendini değerlendirmiyor. */
 function ratingOf(score: number): Rating.Again | Rating.Hard | Rating.Good | Rating.Easy {
   if (score >= 0.85) return Rating.Easy;
-  if (score >= 0.72) return Rating.Good;
+  if (score >= PASS) return Rating.Good;
   if (score >= 0.58) return Rating.Hard;
   return Rating.Again;
 }
 
-/** Düşen kontrolü teşhis adına çevirir — İlerleme raporu bunu kullanıyor. */
 function failedChecks(r: ShapeResult): string[] {
   const out: string[] = [];
-  if (r.missedSection) out.push('humps'); // atlanan bölüm = eksik tepe/eleman
+  if (r.missedSection) out.push('humps');
   if (r.recall < 0.7) out.push('length');
   if (r.precision < 0.65) out.push('shape');
   return out;
@@ -118,17 +120,18 @@ function failedChecks(r: ShapeResult): string[] {
 export function render(root: HTMLElement, subject?: string): () => void {
   const target = subject ?? 'и';
   const info = describe(target);
+
   root.className = 'screen flush';
   root.innerHTML = `
     <div class="practice-top">
       <a class="back" href="#/">✕</a>
       <div class="practice-title">
         <b class="${info.element ? 'as-text' : ''}">${info.title}</b>
-        <span id="stageLabel">Kademe 1</span>
+        <span id="stepLabel">${LESSON[0]!.label}</span>
       </div>
-      <button id="say" class="ghost" style="min-height:38px;padding:8px 13px" title="Harfi dinle">🔊</button>
-      <button id="peek" class="ghost" style="min-height:38px;padding:8px 13px">Kılavuz</button>
+      <button id="say" class="ghost" style="min-height:38px;padding:8px 13px" title="Dinle">🔊</button>
     </div>
+    <div class="step-dots" id="dots"></div>
     <div class="ink-surface" id="surface"></div>
     <div class="toolbar">
       <button id="undo" class="ghost" disabled>↶ Geri al</button>
@@ -136,31 +139,18 @@ export function render(root: HTMLElement, subject?: string): () => void {
       <span class="spacer"></span>
       <button id="check" class="primary" disabled>Kontrol et</button>
     </div>
-    ${
-      info.word
-        ? `<div class="word-strip"><b>${info.title}</b><span>${info.sub}</span></div>`
-        : ''
-    }
+    ${info.word ? `<div class="word-strip"><b>${info.title}</b><span>${info.sub}</span></div>` : ''}
     <div class="scroll"><div id="result"></div></div>
   `;
 
   const host = root.querySelector<HTMLElement>('#surface')!;
   const resultBox = root.querySelector<HTMLElement>('#result')!;
-  const stageLabel = root.querySelector<HTMLElement>('#stageLabel')!;
+  const stepLabel = root.querySelector<HTMLElement>('#stepLabel')!;
+  const dotsBox = root.querySelector<HTMLElement>('#dots')!;
   const checkBtn = root.querySelector<HTMLButtonElement>('#check')!;
   const undoBtn = root.querySelector<HTMLButtonElement>('#undo')!;
   const clearBtn = root.querySelector<HTMLButtonElement>('#clear')!;
-
-  /**
-   * Düğme durumları tek yerden. Değerlendirme yapıldıktan sonra hamle
-   * düzenlenemez — sonuç FSRS'e yazıldı, geri alınırsa puanla ekran uyuşmaz.
-   */
-  const syncButtons = () => {
-    const has = strokes.length > 0;
-    undoBtn.disabled = checked || !has;
-    clearBtn.disabled = !has;
-    checkBtn.disabled = !checked && !has;
-  };
+  const sayBtn = root.querySelector<HTMLButtonElement>('#say')!;
 
   const surface = new InkSurface(host, { desynchronized: true });
   const strokes: InkStroke[] = [];
@@ -172,17 +162,26 @@ export function render(root: HTMLElement, subject?: string): () => void {
   let paper: PaperConfig = DEFAULT_PAPER;
   let box: GuideBox | null = null;
   let elBox: ElementBox | null = null;
+  let disposed = false;
 
-  /** Hedef şekli çizen işlev — hem kılavuz hem değerlendirme aynı kaynağı kullanır. */
-  // Kelimede kalem ilk harfin başlangıcından başlar.
+  // — ders durumu —
+  let stepIndex = 0;
+  let passedInStep = 0;
+  const scores: number[] = [];
+  let checked = false;
+  let finished = false;
+  let peeked = false;
+  let nextHash = '#/ozet';
+
+  const step = () => LESSON[Math.min(stepIndex, LESSON.length - 1)]!;
+  const passedTotal = () =>
+    LESSON.slice(0, stepIndex).reduce((n, s) => n + s.need, 0) + passedInStep;
+
   const start = info.element ? undefined : startOf(target[0] ?? target);
-  /** Başlangıç işaretinin ekran konumu — hem çizim hem denetim kullanıyor. */
   const startAt = (): { x: number; y: number } | null => {
     if (!start || !box) return null;
     // Kelimede nokta ilk harfe göre konumlanır, kelimenin tamamına göre değil.
-    const span = info.word
-      ? firstCharWidth(surface.ctx.paper, target, box)
-      : box.width;
+    const span = info.word ? firstCharWidth(surface.ctx.paper, target, box) : box.width;
     return startPointOf(box, start, paper.rowHeight, span);
   };
 
@@ -190,16 +189,21 @@ export function render(root: HTMLElement, subject?: string): () => void {
     if (info.element) return elBox ? elementPainter(target, elBox) : null;
     return box ? targetPainter(target, box) : null;
   };
-  let stage: 1 | 2 | 3 = 1;
-  let peeking = false;
-  let checked = false;
-  let disposed = false;
 
-  const guideAlpha = () => (peeking ? 0.34 : STAGE_ALPHA[stage - 1]!);
+  const drawDots = () => {
+    const done = passedTotal();
+    let i = 0;
+    dotsBox.innerHTML = LESSON.map(
+      (s) =>
+        `<span class="dot-group" title="Kademe ${s.stage}">` +
+        Array.from({ length: s.need }, () => `<i class="${i++ < done ? 'on' : ''}"></i>`).join('') +
+        `</span>`,
+    ).join('');
+  };
 
   const redraw = () => {
     drawPaper(surface.ctx.paper, surface.width, surface.height, paper);
-    const alpha = guideAlpha();
+    const alpha = step().alpha;
     const paint = painter();
     if (paint && alpha > 0) {
       const ctx = surface.ctx.paper;
@@ -213,8 +217,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       if (info.word && box && info.stress >= 0) {
         drawStress(surface.ctx.paper, target, box, info.stress, Math.min(1, alpha * 3));
       }
-
-      // İşaret yalnızca kılavuz görünürken — kılavuz yoksa ipucu da olmamalı.
+      // İşaret yalnızca kılavuz görünürken; Kademe 3'te ipucu yok.
       const at = startAt();
       if (at) drawStartMarker(surface.ctx.paper, at, paper.rowHeight, Math.min(1, alpha * 3));
     }
@@ -233,6 +236,25 @@ export function render(root: HTMLElement, subject?: string): () => void {
     redraw();
   };
   surface.setResizeHandler(remeasure);
+
+  const syncButtons = () => {
+    const has = strokes.length > 0;
+    undoBtn.disabled = checked || !has;
+    clearBtn.disabled = checked || !has;
+    checkBtn.disabled = !checked && !has;
+  };
+
+  /** Sonraki denemeye hazırla — tuval temiz, sonuç kapalı. */
+  const nextAttempt = () => {
+    strokes.length = 0;
+    checked = false;
+    resultBox.innerHTML = '';
+    checkBtn.textContent = 'Kontrol et';
+    stepLabel.textContent = step().label;
+    drawDots();
+    redraw();
+    syncButtons();
+  };
 
   const paint = () => {
     frame = 0;
@@ -260,7 +282,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       onEnd(reason) {
         if (frame) cancelAnimationFrame(frame);
         frame = 0;
-        if (current.length > 1) {
+        if (current.length > 1 && !checked) {
           surface.ctx.committed.fillStyle = INK_COLOR;
           surface.ctx.committed.fill(outlinePath(current, styleFor(pointerType), true));
           strokes.push({
@@ -281,38 +303,30 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   // — kurulum —
   void (async () => {
-    const [saved, card] = await Promise.all([
+    const [saved] = await Promise.all([
       getSetting<PaperConfig>('paper', DEFAULT_PAPER),
       openLesson(target),
       ensureGuideFont(),
     ]);
     if (disposed) return;
     paper = saved;
-    stage = stageOfReps(card.fsrs.reps);
-    stageLabel.textContent = `Kademe ${stage}`;
     remeasure();
+    drawDots();
   })();
 
-  // — eylemler —
-  const sayBtn = root.querySelector<HTMLButtonElement>('#say')!;
-  // Elementlerin sesi yok — düğmeyi hiç gösterme.
-  if (info.element) sayBtn.remove();
-  sayBtn.addEventListener('click', () => {
-    if (!speak(info.say)) {
-      // Ses yoksa sessizce başarısız olmasın — durumu söyle (brief 9.2/13).
-      sayBtn.textContent = '—';
-      sayBtn.title = 'Cihazda ru-RU ses bulunamadı';
-      setTimeout(() => {
-        sayBtn.textContent = '🔊';
-      }, 1600);
-    }
-  });
-  if (!speechStatus().ready) sayBtn.style.opacity = '.45';
-
-  root.querySelector('#peek')!.addEventListener('click', () => {
-    peeking = !peeking;
-    redraw();
-  });
+  if (info.element) {
+    sayBtn.remove();
+  } else {
+    sayBtn.addEventListener('click', () => {
+      peeked = true;
+      if (!speak(info.say)) {
+        sayBtn.textContent = '—';
+        sayBtn.title = 'Cihazda ru-RU ses bulunamadı';
+        setTimeout(() => (sayBtn.textContent = '🔊'), 1600);
+      }
+    });
+    if (!speechStatus().ready) sayBtn.style.opacity = '.45';
+  }
 
   undoBtn.addEventListener('click', () => {
     if (checked || !strokes.length) return;
@@ -322,33 +336,32 @@ export function render(root: HTMLElement, subject?: string): () => void {
   });
 
   clearBtn.addEventListener('click', () => {
+    if (checked) return;
     strokes.length = 0;
-    checked = false;
-    checkBtn.textContent = 'Kontrol et';
-    resultBox.innerHTML = '';
     redraw();
     syncButtons();
   });
 
-  /** Değerlendirmeden sonra nereye gidileceği; kuyruk bitmişse özet. */
-  let nextHash = '#/ozet';
-
   checkBtn.addEventListener('click', () => {
-    if (checked) {
+    if (finished) {
       location.hash = nextHash;
       return;
     }
-    if (!strokes.length) return;
-    void grade();
+    if (checked) {
+      nextAttempt();
+      return;
+    }
+    if (strokes.length) void grade();
   });
 
   async function grade(): Promise<void> {
-    const paint = painter();
-    if (!paint) return;
+    const paintTarget = painter();
+    if (!paintTarget) return;
+
     const result = scoreShape({
       width: surface.width,
       height: surface.height,
-      drawTarget: paint,
+      drawTarget: paintTarget,
       drawUser: (ctx) => {
         for (const s of strokes) ctx.fill(outlinePath(s.points, styleFor(s.pointerType), true));
       },
@@ -357,14 +370,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
     });
 
     checked = true;
-    checkBtn.textContent = 'Devam';
     syncButtons();
-
-    // Atlanan/taşan bölgeleri mürekkebin üstüne bindir.
     surface.ctx.live.drawImage(result.overlay, 0, 0);
 
-    // Başlangıç denetimi — yönün yakalanabilen yarısı. Tam yön/hamle sırası
-    // glyph verisi ister; başlangıç noktası onun küçük ama işe yarar parçası.
+    // Başlangıç denetimi — yönün yakalanabilen yarısı.
     const at = startAt();
     const firstPoint = strokes[0]?.points[0];
     const startOff =
@@ -372,9 +381,24 @@ export function render(root: HTMLElement, subject?: string): () => void {
         ? Math.hypot(firstPoint.x - at.x, firstPoint.y - at.y) > paper.rowHeight * 0.45
         : false;
 
-    const msg = shapeMessage(result, info.element ? 'şekil' : info.word ? 'kelime' : 'harf');
     const checks = failedChecks(result);
     if (startOff) checks.unshift('start');
+
+    const passed = result.score >= PASS && !startOff;
+    scores.push(result.score);
+
+    if (passed) {
+      passedInStep++;
+      if (passedInStep >= step().need) {
+        stepIndex++;
+        passedInStep = 0;
+      }
+    }
+    drawDots();
+    finished = stepIndex >= LESSON.length;
+
+    const noun = info.element ? 'şekil' : info.word ? 'kelime' : 'harf';
+    const msg = shapeMessage(result, noun);
     const pct = (v: number) => Math.round(v * 100);
 
     resultBox.innerHTML = `
@@ -398,61 +422,72 @@ export function render(root: HTMLElement, subject?: string): () => void {
           <div class="bar-track"><i style="width:${pct(result.recall)}%;background:var(--amber)"></i></div>
           <b>${pct(result.recall)}</b>
         </div>
-        <p class="fine">
-          Kehribar = atladığın yerler · Mercan = taşan mürekkep.
-          Yön ve hamle sırası henüz denetlenmiyor.
-        </p>
+        <p class="fine">${
+          passed
+            ? `${passedTotal()} / ${TOTAL} tamam.`
+            : 'Bu deneme sayılmadı — kademe ilerlemedi, tekrar dene.'
+        }</p>
       </div>`;
 
-    await Promise.all([
-      review(`${kindOf(target)}:${target}:write`, ratingOf(result.score), checks),
-      saveAttempt({
-        id: newId(),
-        ts: Date.now(),
-        target: `${kindOf(target)}:${target}`,
-        stage,
-        strokes: strokes.slice(),
-        verdict: result.score >= 0.72 ? 'pass' : 'fail',
-        failedChecks: checks,
-        thresholds: {
-          precision: result.precision,
-          recall: result.recall,
-          score: result.score,
-        },
-        hintUsed: peeking,
-        env: {
-          appVersion: APP_VERSION,
-          ua: navigator.userAgent,
-          standalone: isStandalone(),
-          dpr: window.devicePixelRatio || 1,
-          surface: { w: surface.width, h: surface.height },
-          desynchronized: surface.desynchronized,
-        },
-      }),
-    ]);
+    if (!finished) {
+      checkBtn.textContent = passed ? 'Sonraki' : 'Tekrar dene';
+      stepLabel.textContent = step().label;
+      return;
+    }
+    await finishLesson(checks);
+  }
 
+  /**
+   * Ders bitti: denemelerin ORTALAMASI tek bir FSRS notuna çevriliyor.
+   * Her deneme ayrı not olsaydı yedi tekrar kartı yapay olarak ileri atardı.
+   */
+  async function finishLesson(lastChecks: string[]): Promise<void> {
+    const average = scores.reduce((n, x) => n + x, 0) / Math.max(1, scores.length);
+
+    await review(`${kindOf(target)}:${target}:write`, ratingOf(average), lastChecks);
     await recordReview();
     pushResult({
       subject: target,
       label: info.title,
-      score: result.score,
-      checks,
+      score: average,
+      checks: lastChecks,
       at: Date.now(),
     });
+    await saveAttempt({
+      id: newId(),
+      ts: Date.now(),
+      target: `${kindOf(target)}:${target}`,
+      stage: 3,
+      strokes: strokes.slice(),
+      verdict: average >= PASS ? 'pass' : 'fail',
+      failedChecks: lastChecks,
+      thresholds: { average, attempts: scores.length },
+      hintUsed: peeked,
+      env: {
+        appVersion: APP_VERSION,
+        ua: navigator.userAgent,
+        standalone: isStandalone(),
+        dpr: window.devicePixelRatio || 1,
+        surface: { w: surface.width, h: surface.height },
+        desynchronized: surface.desynchronized,
+      },
+    });
 
-    // Sıradaki kart: bu oturumda henüz görülmemiş olan öncelikli. Aynı kartı
-    // arka arkaya vermemek için — "Again" notu FSRS'te dakikalar sonrasına
-    // zamanlıyor, yoksa aynı harfte takılı kalınırdı.
     const queue = await buildQueue();
     if (disposed) return;
     const seen = seenSubjects();
-    // Bu oturumda görülmemiş bir konu varsa ona geç. Hepsi görülmüşse oturumu
-    // bitir — aynı harfi döngüye sokmaktansa özet göstermek doğru.
     const next = queue.cards.find((c) => c.subject !== target && !seen.has(c.subject));
+
+    resultBox.insertAdjacentHTML(
+      'afterbegin',
+      `<div class="ok" style="text-align:center">
+         <b>Ders tamam</b> · ${scores.length} deneme, ortalama ${Math.round(average * 100)}
+       </div>`,
+    );
 
     if (next) {
       nextHash = `#/calis/${encodeURIComponent(next.subject)}`;
-      checkBtn.textContent = `Devam · ${queue.total}`;
+      checkBtn.textContent = `Sonraki ders · ${queue.total}`;
     } else {
       nextHash = '#/ozet';
       checkBtn.textContent = 'Oturumu bitir';
@@ -472,9 +507,8 @@ function kindOf(subject: string): 'letter' | 'element' | 'word' {
 }
 
 /**
- * Ders açma: kart yoksa üretir. Patika düğümüne dokunulduğunda buraya gelinir.
- * Kelime dersinde o seviyenin BÜTÜN kelimeleri açılır — oturum sonra kuyruk
- * üzerinden kendiliğinden aralarında dolaşır.
+ * Ders açma: kart yoksa üretir. Kelime dersinde o seviyenin BÜTÜN kelimeleri
+ * açılır — oturum sonra kuyruk üzerinden aralarında dolaşır.
  */
 async function openLesson(subject: string) {
   const element = ELEMENTS.find((e) => e.id === subject);
