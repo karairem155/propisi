@@ -7,8 +7,24 @@
 import { ALPHABET, ELEMENTS, LEVELS, levelOfLetter } from '../data/curriculum';
 import { mastery } from '../srs/cards';
 import { progressBySubject } from '../srs/scheduler';
-import { art } from '../ui/assets';
 import { mascot, type MascotName } from '../ui/mascot';
+
+/**
+ * Bölüm başlığı.
+ *
+ * Burada üç tane tam genişlik 3:2 görsel yuvası vardı ve üçü de ekranı
+ * kaplayıp asıl içeriği — harf ızgarasını — katlamanın altına itiyordu.
+ * Dekoratif görseli beklemek yerine başlığın kendisi kompaktlaştırıldı:
+ * maskot, Türkçe ad, Rusça karşılık ve sayaç tek satırda.
+ */
+function sectionHead(title: string, ru: string, art: MascotName, count: string): string {
+  return `
+    <div class="section-head">
+      <span class="section-art">${mascot(art, { size: 40, mood: 'happy' })}</span>
+      <span class="section-txt"><b>${title}</b><small>${ru}</small></span>
+      <span class="section-count">${count}</span>
+    </div>`;
+}
 
 type Progress = Awaited<ReturnType<typeof progressBySubject>>;
 
@@ -38,31 +54,28 @@ export function gridHtml(progress: Progress): string {
         <b>tekrar bekliyor</b> demek. Gri hücreler henüz açılmadı.
       </div>
 
-      <h2>Elemanlar</h2>
-      ${art('section-elements')}
-      <div class="card" style="margin-top:10px">
-        <div class="row" style="justify-content:space-around">
+      ${sectionHead('Elemanlar', 'элементы букв', 'oval', `${ELEMENTS.length} ders`)}
+      <div class="card">
+        <div class="element-row">
           ${ELEMENTS.filter((e) => e.mascot)
             .map(
-              (e) => `<div style="text-align:center">
-                ${mascot(e.mascot as MascotName, { size: 56, mood: progress.get(e.id)?.seen ? 'happy' : 'sleep' })}
-                <div style="font-size:12px;font-weight:800;margin-top:2px">${e.name}</div>
-                <div style="font-size:11px;color:var(--muted)">${e.ru}</div>
+              (e) => `<div class="element-cell">
+                ${mascot(e.mascot as MascotName, { size: 52, mood: progress.get(e.id)?.seen ? 'happy' : 'sleep' })}
+                <b>${e.name}</b>
+                <small>${e.ru}</small>
               </div>`,
             )
             .join('')}
         </div>
       </div>
 
-      <h2>Harfler · 33</h2>
-      ${art('section-letters')}
-      <div style="margin-top:10px" class="letter-grid">
+      ${sectionHead('Harfler', 'буквы', 'cubuk', `${ALPHABET.length} harf`)}
+      <div class="letter-grid">
         ${ALPHABET.map(cell).join('')}
       </div>
 
-      <h2>Bağlantılar</h2>
-      ${art('section-joins')}
-      <div class="card" style="margin-top:10px">
+      ${sectionHead('Bağlantılar', 'соединения', 'kanca', `${LEVELS.reduce((n, l) => n + l.joins.length, 0)} çift`)}
+      <div class="card">
         ${LEVELS.map(
           (l) => `<div style="margin-bottom:10px">
             <b style="font-size:13px">${l.tag} · ${l.ru}</b>

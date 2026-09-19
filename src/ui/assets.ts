@@ -29,7 +29,6 @@ export const ASSETS = {
   'goal-complete': { no: '08', alt: 'Hedef tamamlandı', ratio: '9:16', bg: 'white' },
 
   // C · Patika
-  'path-bg-tile': { no: '09', alt: 'Patika zemin dokusu', ratio: '1:1', bg: 'blue' },
   'level-badge-0': { no: '10', alt: 'Seviye 0 arması', ratio: '1:1', bg: 'transparent' },
   'level-badge-1': { no: '11', alt: 'Seviye 1 arması', ratio: '1:1', bg: 'transparent' },
   'level-badge-2': { no: '12', alt: 'Seviye 2 arması', ratio: '1:1', bg: 'transparent' },
@@ -42,12 +41,8 @@ export const ASSETS = {
   'level-complete': { no: '19', alt: 'Seviye tamamlandı', ratio: '16:9', bg: 'blue' },
 
   // D · Alfabe
-  'section-elements': { no: '20', alt: 'Elemanlar bölümü', ratio: '3:2', bg: 'white' },
-  'section-letters': { no: '21', alt: 'Harfler bölümü', ratio: '3:2', bg: 'white' },
-  'section-joins': { no: '22', alt: 'Bağlantılar bölümü', ratio: '3:2', bg: 'white' },
 
   // E · İlerleme
-  'progress-hero': { no: '23', alt: 'İlerleme', ratio: '3:2', bg: 'white' },
   'badge-streak3': { no: '24', alt: '3 gün seri', ratio: '1:1', bg: 'transparent' },
   'badge-streak7': { no: '25', alt: '7 gün seri', ratio: '1:1', bg: 'transparent' },
   'badge-streak30': { no: '26', alt: '30 gün seri', ratio: '1:1', bg: 'transparent' },
@@ -61,7 +56,6 @@ export const ASSETS = {
   'feedback-correct': { no: '32', alt: 'Doğru', ratio: '1:1', bg: 'transparent' },
   'feedback-wrong': { no: '33', alt: 'Tekrar dene', ratio: '1:1', bg: 'transparent' },
   'feedback-hint': { no: '34', alt: 'İpucu', ratio: '1:1', bg: 'transparent' },
-  'session-summary': { no: '35', alt: 'Oturum özeti', ratio: '3:2', bg: 'white' },
 
   // G · Maskot kadrosu (3B) — ui/mascot.ts bunları kullanır, yoksa SVG'ye düşer
   'mascot-cubuk-happy': { no: '36', alt: 'Çubuk — memnun', ratio: '1:1', bg: 'transparent' },
@@ -88,9 +82,14 @@ export type AssetKey = keyof typeof ASSETS;
  * Gelen dosyalar. Buraya eklenmeyen anahtar için istek atılmaz — eksik görsel
  * 404 üretmesin diye kapı burası.
  *
- * 19 Eylül 2026: 29 görsel teslim alındı (3B render, WebP). Eksik 6 tanesi
- * hâlâ yer tutucu gösteriyor: path-bg-tile, section-*, progress-hero,
- * session-summary.
+ * 19 Eylül 2026: 29 görsel teslim alındı (3B render, WebP) ve LİSTE TAMAM —
+ * her yuvanın dosyası var, hiçbir ekranda yer tutucu kalmadı.
+ *
+ * Teslim edilmeyen altı yuva kaldırıldı, çünkü hiçbiri gerekmiyordu:
+ * `path-bg-tile` ve `session-summary` hiç kullanılmıyordu; `section-*` ve
+ * `progress-hero` ise tam genişlik 3:2 dekoratif görsellerdi ve asıl içeriği
+ * (harf ızgarası, ısı haritası) katlamanın altına itiyorlardı. Yerlerine
+ * ekranın kendi verisini taşıyan kompakt başlıklar kondu.
  */
 export const PRESENT: AssetKey[] = [
   'onboard-welcome', 'onboard-scribble', 'onboard-voice', 'onboard-install',

@@ -8,6 +8,7 @@ import { allCards } from '../srs/scheduler';
 import { countAttempts } from '../db/db';
 import { earnedBadges, statsView, totalReviews } from '../srs/stats';
 import { art, type AssetKey } from '../ui/assets';
+import { mascot } from '../ui/mascot';
 import { CHECK_LABELS as CHECKS } from './tekrar';
 
 /**
@@ -63,10 +64,23 @@ export function render(root: HTMLElement): () => void {
     // Geçilen kontrol noktası sayısı — "İlk grup" rozetinin koşulu.
     const groupsPassed = cards.filter((c) => c.kind === 'checkpoint' && c.fsrs.reps > 0).length;
 
+    // Burada 3:2'lik dekoratif bir görsel yuvası vardı ve ekranın yarısını
+    // boş bırakıp asıl veriyi — ısı haritasını — aşağı itiyordu. Yerine
+    // ekranın kendi verisini taşıyan kompakt bir başlık kondu.
+    const pctMastered = Math.round(
+      (ALPHABET.filter((ch) => (byLetter.get(ch) ?? 0) > 0.5).length / ALPHABET.length) * 100,
+    );
     root.innerHTML = `
-      ${art('progress-hero')}
+      <div class="progress-hero">
+        ${mascot('oval', { size: 66, mood: pctMastered > 0 ? 'cheer' : 'open' })}
+        <div class="progress-hero-txt">
+          <b>${pctMastered}%</b>
+          <span>alfabenin ustalaşılan kısmı</span>
+          <div class="progress-hero-bar"><i style="width:${pctMastered}%"></i></div>
+        </div>
+      </div>
 
-      <div class="stats" style="margin-top:12px">
+      <div class="stats">
         <div class="stat"><b>${byLetter.size}</b><span>açılmış harf</span></div>
         <div class="stat"><b>${seen}</b><span>çalışılmış kart</span></div>
         <div class="stat"><b>${cards.length}</b><span>toplam kart</span></div>

@@ -453,10 +453,18 @@ label.toggle input[type='checkbox'] {
 
 /* ── İstatistik kutuları ─────────────────────────────────────────────────── */
 
+/* auto-fit ile 4 kutu dar ekranda 3+1 diye kırılıyordu; sabit iki sütun
+   hep dengeli duruyor, geniş ekranda dörde açılıyor. */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+}
+
+@media (min-width: 560px) {
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
 }
 
 .stat {
@@ -1776,4 +1784,120 @@ nav.tabs .tab-badge {
   background: #fff;
   color: var(--ink);
   cursor: pointer;
+}
+
+/* ── Bölüm başlığı (Alfabe) ──────────────────────────────────────────────── */
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 10px;
+}
+
+.section-art {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.section-txt {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.section-txt b {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.section-txt small {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.section-count {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Eleman kadrosu — 5 öğe esnek satırda 4+1 diye kırılıyordu. */
+.element-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+  gap: 10px 4px;
+  text-align: center;
+}
+
+.element-cell b {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.element-cell small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+/* ── İlerleme başlığı ────────────────────────────────────────────────────── */
+
+.progress-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 2px 16px;
+}
+
+.progress-hero-txt {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.progress-hero-txt b {
+  display: block;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+}
+
+.progress-hero-txt span {
+  display: block;
+  margin: 2px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.progress-hero-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.progress-hero-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mint);
+  transition: width 0.4s ease;
 }
