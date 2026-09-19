@@ -165,13 +165,24 @@ kelime listesi. Kelimeler o noktaya kadar öğrenilmiş harflerle sınırlı se�
 8.1'den, çizim sonucunu nota çevirme brief 8.2'den. Kuyruk tür bazında serpiştirilir —
 brief 7.0: *"Tek tip tekrar sıkıcıdır ve transfer sağlamaz."*
 
-**Görsel yuvaları** (`src/ui/assets.ts`) 35 yuva tanımlar. Dosya yoksa numaralı yer
-tutucu çizilir, istek atılmaz. Görsel geldiğinde yapılacak tek şey:
+**Görsel yuvaları** (`src/ui/assets.ts`) 29 yuva tanımlar ve **hepsinin dosyası var** —
+hiçbir ekranda yer tutucu kalmadı. Dosya yoksa numaralı yer tutucu çizilir, istek
+atılmaz. Yeni görsel geldiğinde yapılacak tek şey:
 
-1. dosyayı `public/art/<anahtar>.png` olarak koy
+1. dosyayı `public/art/<anahtar>.webp` olarak koy
 2. `assets.ts` içindeki `PRESENT` listesine anahtarı ekle
 
 Başka hiçbir yer değişmez.
+
+Teslim edilmeyen altı yuva **silindi**, çünkü hiçbiri gerekmiyordu: ikisi zaten
+çağrılmıyordu, dördü ise tam genişlik 3:2 dekoratif görsellerdi ve asıl içeriği
+(harf ızgarası, ısı haritası) katlamanın altına itiyorlardı. Yerlerine ekranın kendi
+verisini taşıyan kompakt başlıklar kondu.
+
+**İki katmanlı görsel dili:** 3B render'lar *sahne* (karşılama, rozet, geri bildirim),
+SVG maskotlar *arayüz simgesi* (bölüm başlığı, patika düğümü, kart rozeti). SVG her
+ölçekte net, tek renk token'ıyla temalanıyor, çevrimdışı sıfır bayt. `mascot()` 44px
+üstünde 3B dosya varsa onu tercih ediyor, yoksa SVG'ye düşüyor.
 
 **Sınav listesi** (`srs/session.ts`) alıştırma ekranlarını zincirler. İki
 kullanıcısı var ve ikisi zıt davranır: kontrol noktası (sınav — tek kılavuzsuz
