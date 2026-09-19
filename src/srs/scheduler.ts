@@ -82,7 +82,7 @@ export async function review(
  *
  * Ekranları geldikçe buraya eklenecek.
  */
-const PRACTICABLE: CardKind[] = ['letter:write', 'element:write'];
+const PRACTICABLE: CardKind[] = ['letter:write', 'element:write', 'word:write'];
 
 export function isPracticable(card: SrsCard): boolean {
   return PRACTICABLE.includes(card.kind);

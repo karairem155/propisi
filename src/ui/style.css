@@ -1414,3 +1414,27 @@ nav.tabs .tab-badge {
   color: var(--muted);
   line-height: 1.25;
 }
+
+/* Kelime çalışmasında matbu hâli ve Türkçe anlamı. */
+.word-strip {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--r-md);
+  padding: 8px 14px;
+  flex: 0 0 auto;
+}
+
+.word-strip b {
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.word-strip span {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  font-weight: 600;
+}

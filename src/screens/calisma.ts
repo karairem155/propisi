@@ -16,7 +16,9 @@ import { outlinePath, styleFor } from '../canvas/ink';
 import { drawPaper, DEFAULT_PAPER, type PaperConfig } from '../ui/paper';
 import {
   drawStartMarker,
+  drawStress,
   ensureGuideFont,
+  firstCharWidth,
   measureGuide,
   startPointOf,
   targetPainter,
@@ -37,19 +39,52 @@ import { recordReview } from '../srs/stats';
 import { pushResult, seenSubjects } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
-import { ELEMENTS, LEVELS, levelOfLetter } from '../data/curriculum';
+import { ELEMENTS, LEVELS, findWord, levelOfLetter } from '../data/curriculum';
 
-/** Ekranda gösterilecek başlık ve seslendirilecek metin. */
-function describe(subject: string): { title: string; sub: string; say: string; element: boolean } {
+type Info = {
+  title: string;
+  sub: string;
+  say: string;
+  element: boolean;
+  word: boolean;
+  /** Vurgulu harfin indeksi — yalnız kelimelerde. */
+  stress: number;
+};
+
+/** Ekranda gösterilecek başlık, seslendirilecek metin ve tür. */
+function describe(subject: string): Info {
   const el = ELEMENTS.find((e) => e.id === subject);
-  if (el) return { title: el.name, sub: el.ru, say: '', element: true };
+  if (el) {
+    return { title: el.name, sub: el.ru, say: '', element: true, word: false, stress: -1 };
+  }
+
+  const w = findWord(subject);
+  if (w) {
+    return {
+      title: w.word.ru,
+      sub: w.word.tr,
+      say: w.word.ru,
+      element: false,
+      word: true,
+      stress: w.word.stress,
+    };
+  }
 
   for (const lvl of LEVELS) {
     const l = lvl.letters.find((x) => x.ch === subject);
     // Ünsüzlerde harfin ADI değil SESİ okunuyor (bkz. curriculum.ts → say).
-    if (l) return { title: l.ch, sub: l.hint ?? lvl.ru, say: l.say ?? l.ch, element: false };
+    if (l) {
+      return {
+        title: l.ch,
+        sub: l.hint ?? lvl.ru,
+        say: l.say ?? l.ch,
+        element: false,
+        word: false,
+        stress: -1,
+      };
+    }
   }
-  return { title: subject, sub: '', say: subject, element: false };
+  return { title: subject, sub: '', say: subject, element: false, word: false, stress: -1 };
 }
 
 const INK_COLOR = '#14213d';
@@ -101,6 +136,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
       <span class="spacer"></span>
       <button id="check" class="primary" disabled>Kontrol et</button>
     </div>
+    ${
+      info.word
+        ? `<div class="word-strip"><b>${info.title}</b><span>${info.sub}</span></div>`
+        : ''
+    }
     <div class="scroll"><div id="result"></div></div>
   `;
 
@@ -134,10 +174,17 @@ export function render(root: HTMLElement, subject?: string): () => void {
   let elBox: ElementBox | null = null;
 
   /** Hedef şekli çizen işlev — hem kılavuz hem değerlendirme aynı kaynağı kullanır. */
-  const start = info.element ? undefined : startOf(target);
+  // Kelimede kalem ilk harfin başlangıcından başlar.
+  const start = info.element ? undefined : startOf(target[0] ?? target);
   /** Başlangıç işaretinin ekran konumu — hem çizim hem denetim kullanıyor. */
-  const startAt = (): { x: number; y: number } | null =>
-    start && box ? startPointOf(box, start, paper.rowHeight) : null;
+  const startAt = (): { x: number; y: number } | null => {
+    if (!start || !box) return null;
+    // Kelimede nokta ilk harfe göre konumlanır, kelimenin tamamına göre değil.
+    const span = info.word
+      ? firstCharWidth(surface.ctx.paper, target, box)
+      : box.width;
+    return startPointOf(box, start, paper.rowHeight, span);
+  };
 
   const painter = (): ((ctx: CanvasRenderingContext2D) => void) | null => {
     if (info.element) return elBox ? elementPainter(target, elBox) : null;
@@ -161,6 +208,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
       ctx.fillStyle = '#1d3f8f';
       paint(ctx);
       ctx.restore();
+
+      // Vurgu işareti kelimelerde şart — vurgusuz okunan Rusça kelime yanlıştır.
+      if (info.word && box && info.stress >= 0) {
+        drawStress(surface.ctx.paper, target, box, info.stress, Math.min(1, alpha * 3));
+      }
 
       // İşaret yalnızca kılavuz görünürken — kılavuz yoksa ipucu da olmamalı.
       const at = startAt();
@@ -320,7 +372,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         ? Math.hypot(firstPoint.x - at.x, firstPoint.y - at.y) > paper.rowHeight * 0.45
         : false;
 
-    const msg = shapeMessage(result, info.element ? 'şekil' : 'harf');
+    const msg = shapeMessage(result, info.element ? 'şekil' : info.word ? 'kelime' : 'harf');
     const checks = failedChecks(result);
     if (startOff) checks.unshift('start');
     const pct = (v: number) => Math.round(v * 100);
@@ -357,7 +409,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       saveAttempt({
         id: newId(),
         ts: Date.now(),
-        target: `${info.element ? 'element' : 'letter'}:${target}`,
+        target: `${kindOf(target)}:${target}`,
         stage,
         strokes: strokes.slice(),
         verdict: result.score >= 0.72 ? 'pass' : 'fail',
@@ -414,14 +466,28 @@ export function render(root: HTMLElement, subject?: string): () => void {
   };
 }
 
-function kindOf(subject: string): 'letter' | 'element' {
-  return ELEMENTS.some((e) => e.id === subject) ? 'element' : 'letter';
+function kindOf(subject: string): 'letter' | 'element' | 'word' {
+  if (ELEMENTS.some((e) => e.id === subject)) return 'element';
+  return findWord(subject) ? 'word' : 'letter';
 }
 
-/** Ders açma: kart yoksa üretir. Patika düğümüne dokunulduğunda buraya gelinir. */
+/**
+ * Ders açma: kart yoksa üretir. Patika düğümüne dokunulduğunda buraya gelinir.
+ * Kelime dersinde o seviyenin BÜTÜN kelimeleri açılır — oturum sonra kuyruk
+ * üzerinden kendiliğinden aralarında dolaşır.
+ */
 async function openLesson(subject: string) {
   const element = ELEMENTS.find((e) => e.id === subject);
   if (element) return ensureCard('element:write', subject, 'elements');
+
+  const w = findWord(subject);
+  if (w) {
+    for (const other of w.level.words) {
+      if (other.ru !== subject) await ensureCard('word:write', other.ru, w.level.id);
+    }
+    return ensureCard('word:write', subject, w.level.id);
+  }
+
   const level = levelOfLetter(subject);
   return ensureCard('letter:write', subject, level?.id ?? 'g1');
 }

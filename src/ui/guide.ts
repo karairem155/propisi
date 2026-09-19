@@ -48,15 +48,22 @@ export function measureGuide(
   width: number,
   height: number,
 ): GuideBox {
+  // Kelimeler tek harften çok daha geniş; satıra sığmazsa punto küçülür.
+  const maxWidth = width - 48;
   const PROBE = 100;
   ctx.save();
   ctx.font = `400 ${PROBE}px ${FAMILY}`;
   const ref = ctx.measureText('о');
   const refHeight = ref.actualBoundingBoxAscent + ref.actualBoundingBoxDescent || PROBE * 0.5;
-  const fontSize = Math.max(12, (PROBE * paper.rowHeight) / refHeight);
+  let fontSize = Math.max(12, (PROBE * paper.rowHeight) / refHeight);
 
   ctx.font = `400 ${fontSize}px ${FAMILY}`;
-  const m = ctx.measureText(text);
+  let m = ctx.measureText(text);
+  if (m.width > maxWidth) {
+    fontSize *= maxWidth / m.width;
+    ctx.font = `400 ${fontSize}px ${FAMILY}`;
+    m = ctx.measureText(text);
+  }
   ctx.restore();
 
   const line = baselines(paper, height)[0] ?? height * 0.55;
@@ -69,16 +76,38 @@ export function measureGuide(
   };
 }
 
-/** Normalize başlangıç noktasını ekran koordinatına çevirir. */
+/**
+ * Normalize başlangıç noktasını ekran koordinatına çevirir.
+ *
+ * `spanWidth` başlangıç noktasının normalize edildiği genişlik: tek harfte
+ * harfin kendisi, KELİMEDE İLK HARFİN genişliği. Kelimenin tamamı verilirse
+ * nokta yanlış yere düşer — ör. `окно`da о'nun x=0.82'si kelimenin ortasına
+ * gelirdi.
+ */
 export function startPointOf(
   box: GuideBox,
   start: { x: number; y: number },
   rowHeight: number,
+  spanWidth = box.width,
 ): { x: number; y: number } {
   return {
-    x: box.x + start.x * box.width,
+    x: box.x + start.x * spanWidth,
     y: box.baseline - start.y * rowHeight,
   };
+}
+
+/** Metnin ilk karakterinin genişliği — kelimede başlangıç noktası için. */
+export function firstCharWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  box: GuideBox,
+): number {
+  if (!text) return box.width;
+  ctx.save();
+  ctx.font = `400 ${box.fontSize}px ${FAMILY}`;
+  const w = ctx.measureText(text[0]!).width;
+  ctx.restore();
+  return w || box.width;
 }
 
 /**
@@ -106,6 +135,36 @@ export function drawStartMarker(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('1', at.x, at.y + r * 0.06);
+  ctx.restore();
+}
+
+/**
+ * Vurgu işareti (ударение) — brief 7.4.
+ * Vurgusuz okunan Rusça kelime yanlış kelimedir; kelime kartında şart.
+ */
+export function drawStress(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  box: GuideBox,
+  index: number,
+  alpha = 1,
+): void {
+  if (index < 0 || index >= text.length) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `400 ${box.fontSize}px ${FAMILY}`;
+  const before = ctx.measureText(text.slice(0, index)).width;
+  const ch = ctx.measureText(text[index]!).width;
+  const x = box.x + before + ch * 0.55;
+  const y = box.baseline - box.fontSize * 0.62;
+
+  ctx.strokeStyle = '#f2705f';
+  ctx.lineWidth = Math.max(2, box.fontSize * 0.035);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - box.fontSize * 0.05, y + box.fontSize * 0.07);
+  ctx.lineTo(x + box.fontSize * 0.06, y);
+  ctx.stroke();
   ctx.restore();
 }
 

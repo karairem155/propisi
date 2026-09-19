@@ -105,10 +105,13 @@ export function render(root: HTMLElement): () => void {
             ? [
                 {
                   kind: 'word' as const,
+                  // Düğüm ilk kelimeye gidiyor; ders açılınca o seviyenin bütün
+                  // kelimeleri kuyruğa giriyor (bkz. calisma.ts → openLesson).
+                  subject: level.words[0]!.ru,
                   art: level.words[0]!.ru,
                   label: 'Kelime',
                   sub: level.words.map((w) => w.ru).join(' · '),
-                  ...stateOf(`words-${level.id}`),
+                  ...stateOf(level.words[0]!.ru),
                 },
               ]
             : []),

@@ -274,7 +274,7 @@ function buildOverlay(
  */
 export function shapeMessage(
   r: ShapeResult,
-  noun: 'harf' | 'şekil' = 'harf',
+  noun: 'harf' | 'şekil' | 'kelime' = 'harf',
 ): { title: string; detail: string } {
   // Atlanan bölüm en ciddi hata — önce o söylenir.
   if (r.missedSection) {
