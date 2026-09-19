@@ -28,7 +28,9 @@ export function render(root: HTMLElement): () => void {
     <h2>Yedekleme</h2>
     <p class="note">
       Biriken kayıt bu uygulamanın asıl değeri. <code>navigator.storage.persist()</code>
-      garanti değil — düzenli olarak dışa aktar.
+      garanti değil — düzenli olarak dışa aktar. Yedek <b>hamleleri, tekrar
+      kartlarını ve ayarları</b> birlikte taşır; yalnız hamle yedeklemek
+      zamanlamayı ve seriyi kurtarmıyordu.
     </p>
     <div class="row">
       <button id="export" class="primary on-blue">JSON dışa aktar</button>
@@ -84,9 +86,11 @@ export function render(root: HTMLElement): () => void {
       : '<tr><td colspan="6">Henüz kayıt yok. Çizim yüzeyinde bir deneme kaydet.</td></tr>';
   }
 
+  const summary = (n: { attempts: number; cards: number; settings: number }) =>
+    `${n.attempts} deneme · ${n.cards} tekrar kartı · ${n.settings} ayar`;
+
   root.querySelector('#export')!.addEventListener('click', async () => {
-    const n = await downloadBackup();
-    status.textContent = `${n} deneme dışa aktarıldı.`;
+    status.textContent = `${summary(await downloadBackup())} dışa aktarıldı.`;
   });
 
   root.querySelector('#importBtn')!.addEventListener('click', () => file.click());
@@ -96,7 +100,7 @@ export function render(root: HTMLElement): () => void {
     if (!picked) return;
     try {
       const n = await importBackup(picked);
-      status.textContent = `${n} deneme içe aktarıldı.`;
+      status.textContent = `${summary(n)} içe aktarıldı.`;
       await refresh();
     } catch (err) {
       status.textContent = `İçe aktarma başarısız: ${(err as Error).message}`;

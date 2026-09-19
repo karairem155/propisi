@@ -39,7 +39,7 @@ import { scoreShape, shapeMessage, type ShapeResult } from '../grading/shape';
 import { ensureCard, review } from '../srs/scheduler';
 import { nextAfter } from '../srs/flow';
 import { Rating } from '../srs/cards';
-import { getSetting, saveAttempt, setSetting } from '../db/db';
+import { delSetting, getSetting, saveAttempt, setSetting } from '../db/db';
 import { recordReview } from '../srs/stats';
 import { pushResult, examActive } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
@@ -400,7 +400,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
     });
   };
   const clearProgress = () => {
-    if (!exam) void setSetting<Saved | null>(RESUME_KEY(target), null);
+    if (!exam) void delSetting(RESUME_KEY(target));
   };
 
   // — kurulum —

@@ -69,6 +69,14 @@ export async function setSetting<T>(key: string, value: T): Promise<void> {
 }
 
 /**
+ * Ayarı tamamen kaldırır. `setSetting(key, null)` kaydı bırakıyor ve yedek
+ * artık ayarları da taşıdığı için o boş kayıtlar dosyaya giriyor.
+ */
+export async function delSetting(key: string): Promise<void> {
+  (await db()).delete(STORE_SETTINGS, key);
+}
+
+/**
  * brief 12.3 — Safari 15.2+. Garanti değil, cihaz depolama baskısında LRU tahliye
  * hâlâ mümkün. Asıl güvence JSON dışa aktarma butonudur.
  */
