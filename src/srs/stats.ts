@@ -18,7 +18,33 @@ export type StudyStats = {
 };
 
 const KEY = 'studyStats';
+const BADGE_KEY = 'earnedBadges';
 const KEEP_DAYS = 180;
+
+/**
+ * Anlık olarak kazanılan rozetler.
+ *
+ * Diğer rozetler (seri, harf sayısı) mevcut veriden HER SEFERİNDE yeniden
+ * hesaplanabiliyor. Bu ikisi hesaplanamaz — olduğu anda görülmezse kaybolur:
+ * "kusursuz oturum" oturum kapanınca, "gece çalışması" saate bakarak.
+ */
+export type MomentBadge = 'perfect' | 'night';
+
+export async function earnedBadges(): Promise<Set<MomentBadge>> {
+  return new Set(await getSetting<MomentBadge[]>(BADGE_KEY, []));
+}
+
+export async function awardBadge(key: MomentBadge): Promise<void> {
+  const list = await getSetting<MomentBadge[]>(BADGE_KEY, []);
+  if (list.includes(key)) return;
+  await setSetting(BADGE_KEY, [...list, key]);
+}
+
+/** Toplam değerlendirme sayısı — son 180 günün toplamı. */
+export async function totalReviews(): Promise<number> {
+  const stats = await loadStats();
+  return Object.values(stats.days).reduce((a, b) => a + b, 0);
+}
 
 const EMPTY: StudyStats = { days: {}, streak: 0, best: 0, lastDay: '' };
 
@@ -55,6 +81,10 @@ export async function recordReview(now = new Date()): Promise<StudyStats> {
   }
   stats.days[today] = (stats.days[today] ?? 0) + 1;
   stats.best = Math.max(stats.best, stats.streak);
+
+  // Gece çalışması — sonradan hesaplanamaz, olduğu anda yakalanmalı.
+  const hour = now.getHours();
+  if (hour >= 22 || hour < 5) await awardBadge('night');
 
   // Eski günleri kırp — ayar kaydı şişmesin.
   const cutoff = shiftDays(today, -KEEP_DAYS);

@@ -209,6 +209,22 @@ export const HARD_WORDS: { ru: string; tr: string; after: string; why: string }[
 /** Alfabedeki 33 harf, standart sırada — Alfabe ızgarası bunu kullanır. */
 export const ALPHABET = [...'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'];
 
+/** Müfredattaki bütün kelimeler: seviye kelimeleri + canavar kelimeler. */
+export const ALL_WORDS: string[] = [
+  ...new Set([...LEVELS.flatMap((l) => l.words.map((w) => w.ru)), ...HARD_WORDS.map((w) => w.ru)]),
+];
+
+/**
+ * Harfi içeren kelimeler.
+ *
+ * Harf avı bunlarsız kurulamıyor ve beş harf (`ё й ф ъ э`) hiçbir kelimede
+ * geçmiyor. Alıştırma bunu kendi içinde ele alıyor ama SINAV ele alamaz:
+ * sınav adımı boş ekrana düşerse zincir kopar. Adım seçilirken bakılıyor.
+ */
+export function wordsWith(ch: string): string[] {
+  return ALL_WORDS.filter((w) => w.includes(ch));
+}
+
 /** Bir harf çiftinin hangi seviyede öğretildiği. */
 export function findJoin(pair: string): { pair: string; level: Level } | undefined {
   for (const level of LEVELS) {

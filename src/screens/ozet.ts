@@ -7,7 +7,7 @@
 
 import { currentSession, summarize } from '../srs/session';
 import { buildQueue, practiceHref } from '../srs/scheduler';
-import { statsView } from '../srs/stats';
+import { awardBadge, statsView } from '../srs/stats';
 import { CHECK_LABELS } from './tekrar';
 import { art } from '../ui/assets';
 
@@ -90,6 +90,12 @@ export function render(root: HTMLElement): () => void {
       <a class="btn primary" id="again" href="#/" style="flex:1;text-align:center;text-decoration:none">Bitir</a>
     </div>
   `;
+
+  // "Kusursuz oturum" rozeti — oturum kapanınca kaybolan bir bilgi, sonradan
+  // hesaplanamıyor (bkz. srs/stats.ts → MomentBadge).
+  if (s.count >= 3 && !checkRows.length && s.average >= 0.85) {
+    void awardBadge('perfect');
+  }
 
   let disposed = false;
   void (async () => {

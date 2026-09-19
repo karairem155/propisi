@@ -9,12 +9,12 @@
 // içeren kelimeler öne alınıyor. `и` avını `дом`da yapmak hiçbir şey öğretmez.
 
 import { CONFUSABLES } from '../data/confusables';
-import { HARD_WORDS, LEVELS, levelOfLetter } from '../data/curriculum';
+import { levelOfLetter, wordsWith } from '../data/curriculum';
 import { ensureCard, review } from '../srs/scheduler';
 import { nextAfter } from '../srs/flow';
 import { Rating } from '../srs/cards';
 import { recordReview } from '../srs/stats';
-import { pushResult } from '../srs/session';
+import { playlistActive, pushResult } from '../srs/session';
 import { ensureGuideFont } from '../ui/guide';
 
 const FAMILY = "'Bad Script', cursive";
@@ -24,10 +24,8 @@ type Span = { ch: string; x0: number; x1: number; index: number };
 
 /** Hedef harfi içeren, tercihen karışanını da içeren kelimeler. */
 function pickWords(target: string, count: number): string[] {
-  const pool = [...LEVELS.flatMap((l) => l.words.map((w) => w.ru)), ...HARD_WORDS.map((w) => w.ru)];
   const near = new Set(CONFUSABLES[target] ?? []);
-
-  const withTarget = [...new Set(pool)].filter((w) => w.includes(target));
+  const withTarget = wordsWith(target);
   // Karışan harfi de içerenler önce — asıl ayrım çalışması orada.
   withTarget.sort((a, b) => {
     const score = (w: string) =>
@@ -72,12 +70,21 @@ export function render(root: HTMLElement, subject?: string): () => void {
   };
 
   if (!words.length) {
+    // Sınav zinciri buraya düşerse çıkış "Geri dön" olamaz — `#/` listeyi
+    // kapatır ve sınav yarıda kalır. Zinciri ilerletmek gerekiyor.
     huntBox.innerHTML = `
       <div class="warn">
         <b>${target}</b> harfini içeren kelime yok — müfredatta bu harfle yazılabilen
         kelime tanımlanmamış. Harf avı bu harf için atlandı.
       </div>
-      <a class="btn primary" href="#/" style="display:block;text-align:center;text-decoration:none">Geri dön</a>`;
+      <button class="primary" id="skip" style="width:100%">
+        ${playlistActive() ? 'Sonraki adım' : 'Geri dön'}
+      </button>`;
+    huntBox.querySelector('#skip')!.addEventListener('click', () => {
+      void nextAfter(target).then((next) => {
+        location.hash = playlistActive() ? next.href : '#/';
+      });
+    });
     return () => {
       disposed = true;
     };

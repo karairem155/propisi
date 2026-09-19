@@ -6,16 +6,18 @@ import { ALPHABET, levelOfLetter } from '../data/curriculum';
 import { mastery } from '../srs/cards';
 import { allCards } from '../srs/scheduler';
 import { countAttempts } from '../db/db';
+import { earnedBadges, statsView, totalReviews } from '../srs/stats';
 import { art, type AssetKey } from '../ui/assets';
+import { CHECK_LABELS as CHECKS } from './tekrar';
 
-/** brief 6.2 — teşhis katmanının üreteceği kontrol adları. */
-const CHECK_LABELS: Record<string, string> = {
-  direction: 'Yön',
-  start: 'Başlangıç noktası',
-  humps: 'Tepe sayısı',
-  length: 'Uzunluk',
-  shape: 'Şekil uyumu',
-};
+/**
+ * brief 6.2 — kontrol adları. Tek kaynak tekrar.ts; burada yalnız baş harf
+ * büyük yazılıyor. Kendi kopyası vardı ve `lift` (kalem kaldırma) eksikti —
+ * bağlantı hataları kırılımda hiç görünmüyordu.
+ */
+const CHECK_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(CHECKS).map(([k, v]) => [k, v.charAt(0).toLocaleUpperCase('tr') + v.slice(1)]),
+);
 
 export function render(root: HTMLElement): () => void {
   root.className = 'screen';
@@ -24,7 +26,13 @@ export function render(root: HTMLElement): () => void {
   let disposed = false;
 
   void (async () => {
-    const [cards, attempts] = await Promise.all([allCards(), countAttempts()]);
+    const [cards, attempts, stats, reviews, badges] = await Promise.all([
+      allCards(),
+      countAttempts(),
+      statsView(),
+      totalReviews(),
+      earnedBadges(),
+    ]);
     if (disposed) return;
 
     // Harf başına en iyi ustalık.
@@ -52,6 +60,8 @@ export function render(root: HTMLElement): () => void {
 
     const maxError = Math.max(1, ...Object.values(errorTotals));
     const seen = cards.filter((c) => c.fsrs.reps > 0).length;
+    // Geçilen kontrol noktası sayısı — "İlk grup" rozetinin koşulu.
+    const groupsPassed = cards.filter((c) => c.kind === 'checkpoint' && c.fsrs.reps > 0).length;
 
     root.innerHTML = `
       ${art('progress-hero')}
@@ -99,7 +109,7 @@ export function render(root: HTMLElement): () => void {
                   </div>`;
                 })
                 .join('')}</div>`
-            : '<div class="empty-hint">Henüz hata verisi yok. Çizim değerlendirmesi Faz 1\'de açılıyor.</div>'
+            : '<div class="empty-hint">Henüz hata verisi yok — birkaç ders sonra dolacak.</div>'
         }
       </div>
 
@@ -116,7 +126,7 @@ export function render(root: HTMLElement): () => void {
                   </div>`,
                 )
                 .join('')}</div>`
-            : '<div class="empty-hint">Teşhis katmanı Faz 1\'de devreye giriyor (brief 6.2).</div>'
+            : '<div class="empty-hint">Henüz hata kaydı yok.</div>'
         }
       </div>
 
@@ -126,13 +136,13 @@ export function render(root: HTMLElement): () => void {
           ${(
             [
               ['badge-first-letter', 'İlk harf', byLetter.size >= 1],
-              ['badge-streak3', '3 gün seri', false],
-              ['badge-streak7', '7 gün seri', false],
-              ['badge-100-reviews', '100 tekrar', seen >= 100],
-              ['badge-first-group', 'İlk grup', false],
-              ['badge-perfect', 'Kusursuz oturum', false],
-              ['badge-streak30', '30 gün seri', false],
-              ['badge-night', 'Gece çalışması', false],
+              ['badge-streak3', '3 gün seri', stats.best >= 3],
+              ['badge-streak7', '7 gün seri', stats.best >= 7],
+              ['badge-100-reviews', '100 tekrar', reviews >= 100],
+              ['badge-first-group', 'İlk grup', groupsPassed >= 1],
+              ['badge-perfect', 'Kusursuz oturum', badges.has('perfect')],
+              ['badge-streak30', '30 gün seri', stats.best >= 30],
+              ['badge-night', 'Gece çalışması', badges.has('night')],
             ] as [AssetKey, string, boolean][]
           )
             .map(
@@ -143,7 +153,10 @@ export function render(root: HTMLElement): () => void {
             )
             .join('')}
         </div>
-        <p class="fine">Kazanılmamış rozetler soluk. Koşullar Faz 2'de bağlanacak.</p>
+        <p class="fine">
+          Kazanılmamış rozetler soluk.
+          ${groupsPassed ? `${groupsPassed} kontrol noktası geçildi.` : 'Henüz kontrol noktası geçilmedi.'}
+        </p>
       </div>
 
       <h2>Yazının gelişimi</h2>

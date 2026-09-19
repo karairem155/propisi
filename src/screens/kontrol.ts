@@ -16,7 +16,7 @@
 // yedi denemelik diziyi bırakıp TEK, KILAVUZSUZ denemeye geçiyor
 // (screens/calisma.ts → EXAM_LESSON).
 
-import { ELEMENTS, LEVELS, type Level } from '../data/curriculum';
+import { ELEMENTS, LEVELS, wordsWith, type Level } from '../data/curriculum';
 import { checkpointLevel, labelOf } from '../data/labels';
 import { cardId, mastery, Rating } from '../srs/cards';
 import { ensureCard, progressBySubject, review } from '../srs/scheduler';
@@ -109,12 +109,17 @@ function stepsForLevel(level: Level, letters: string[]): ExamStep[] {
       cursive: true,
     });
   }
-  steps.push({
-    href: `#/av/${encodeURIComponent(pick(2))}`,
-    kind: 'Harf avı',
-    label: pick(2),
-    cursive: true,
-  });
+  // Harf avı yalnız kelimede geçen harfle kurulabiliyor; `ф` gibi bir harf
+  // seçilirse sınav boş ekrana düşer ve zincir kopar (curriculum → wordsWith).
+  const huntable = letters.find((ch) => wordsWith(ch).length > 0);
+  if (huntable) {
+    steps.push({
+      href: `#/av/${encodeURIComponent(huntable)}`,
+      kind: 'Harf avı',
+      label: huntable,
+      cursive: true,
+    });
+  }
 
   const word = level.words[0];
   if (word) {
@@ -222,6 +227,12 @@ export function render(root: HTMLElement, subject?: string): () => void {
   };
 }
 
+/** Müfredatın son kontrol noktası mı — sonrasında açılacak seviye yok. */
+function isLastCheckpoint(subject: string): boolean {
+  const last = LEVELS[LEVELS.length - 1];
+  return Boolean(last) && subject === `cp-${last!.id}`;
+}
+
 /**
  * Adımın tam adı — "Şekil" tek başına yetmiyor: elemanlar sınavında üç adımın
  * da türü "Şekil", hangisinin düştüğü belli olmuyordu.
@@ -320,7 +331,11 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
       <div class="${passed ? 'ok' : 'warn'}">
         ${
           passed
-            ? 'Bir sonraki seviye açıldı. Zayıf kalan adımlar tekrar kuyruğunda.'
+            ? isLastCheckpoint(target)
+              ? `<b>Müfredatı bitirdin.</b> Otuz üç harfin hepsi açıldı —
+                 bundan sonrası tekrar. Kuyruk unutmanı engellemek için
+                 aralıkları kendisi açacak.`
+              : 'Bir sonraki seviye açıldı. Zayıf kalan adımlar tekrar kuyruğunda.'
             : `Geçmek için ortalama ${Math.round(PASS_AVERAGE * 100)} gerekiyor${
                 worst.score < PASS_FLOOR
                   ? ` ve <b>${stepName(exam?.steps[worstAt], worst.subject)}</b> adımı

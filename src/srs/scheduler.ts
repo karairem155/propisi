@@ -73,14 +73,17 @@ export async function review(
 }
 
 /**
- * Şu an gerçekten çalışılabilen kart türleri.
+ * Günlük kuyruğa girebilen kart türleri.
  *
- * NEDEN VAR: tanıma (`:read`), bağlantı, kelime ve dikte kartlarının ekranı
- * henüz yok. Zamanlanırlarsa kuyrukta sonsuza kadar kalıyorlar — çalışma ekranı
- * yalnızca `:write` kartını değerlendirdiği için vadeleri hiç ilerlemiyor ve
- * aynı harf arka arkaya geliyordu. Çalışılamayan şey zamanlanmamalı.
+ * NEDEN VAR: bir zamanlar tanıma (`:read`) kartlarının ekranı yoktu ve kuyrukta
+ * sonsuza kadar kalıyorlardı — çalışma ekranı yalnız `:write` kartını
+ * değerlendirdiği için vadeleri hiç ilerlemiyor, aynı harf arka arkaya
+ * geliyordu. Kural o zamandan kaldı ve hâlâ geçerli: çalışılamayan şey
+ * zamanlanmamalı.
  *
- * Ekranları geldikçe buraya eklenecek.
+ * Alıştırma türlerinin hepsinin artık ekranı var. Listede olmayan tek tür
+ * `checkpoint` ve bu KASITLI: kontrol noktası bir kilometre taşı, tekrar
+ * borcu değil. Patikadan açılıyor, kuyruktan değil.
  */
 const PRACTICABLE: CardKind[] = [
   'letter:write',
