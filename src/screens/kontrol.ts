@@ -157,7 +157,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
     if (!exam) {
       root.innerHTML = `<div class="warn">Böyle bir kontrol noktası yok: <code>${target}</code></div>
-        <a class="primary" href="#/patika" style="display:block;text-align:center">Patikaya dön</a>`;
+        <a class="btn primary" href="#/patika" style="display:block;text-align:center;text-decoration:none">Patikaya dön</a>`;
       return;
     }
 
@@ -201,7 +201,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       <button class="primary" id="start" style="width:100%">
         Sınavı başlat · ${exam.steps.length} adım
       </button>
-      <a class="ghost" href="#/patika" style="display:block;text-align:center;margin-top:10px">
+      <a class="btn ghost" href="#/patika" style="display:block;text-align:center;text-decoration:none;margin-top:10px">
         Sonra
       </a>
     `;
@@ -222,6 +222,15 @@ export function render(root: HTMLElement, subject?: string): () => void {
   };
 }
 
+/**
+ * Adımın tam adı — "Şekil" tek başına yetmiyor: elemanlar sınavında üç adımın
+ * da türü "Şekil", hangisinin düştüğü belli olmuyordu.
+ */
+function stepName(step: ExamStep | undefined, subject: string): string {
+  if (!step) return labelOf(subject).label;
+  return `${step.kind} · ${step.label}`;
+}
+
 // ── Sonuç ekranı ─────────────────────────────────────────────────────────────
 
 export function renderResult(root: HTMLElement, subject?: string): () => void {
@@ -237,8 +246,8 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
     // Sayfa yenilenmişse oturum sıfırlanır ve sınav kaydı kalmaz.
     root.innerHTML = `
       <div class="warn">Sınav kaydı bulunamadı — sayfa yenilenmiş olabilir.</div>
-      <a class="primary" href="#/kontrol/${encodeURIComponent(target)}"
-         style="display:block;text-align:center">Sınavı yeniden çöz</a>`;
+      <a class="btn primary" href="#/kontrol/${encodeURIComponent(target)}"
+         style="display:block;text-align:center;text-decoration:none">Sınavı yeniden çöz</a>`;
     return () => {};
   }
 
@@ -314,18 +323,18 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
             ? 'Bir sonraki seviye açıldı. Zayıf kalan adımlar tekrar kuyruğunda.'
             : `Geçmek için ortalama ${Math.round(PASS_AVERAGE * 100)} gerekiyor${
                 worst.score < PASS_FLOOR
-                  ? ` ve <b>${exam?.steps[worstAt]?.kind ?? labelOf(worst.subject).label}</b> adımı
+                  ? ` ve <b>${stepName(exam?.steps[worstAt], worst.subject)}</b> adımı
                      ${Math.round(PASS_FLOOR * 100)} altında kaldı`
                   : ''
               }. Zayıf adımlar tekrar kuyruğuna girdi — çalışıp geri gel.`
         }
       </div>
 
-      <a class="primary" href="#/patika" style="display:block;text-align:center">Patikaya dön</a>
+      <a class="btn primary" href="#/patika" style="display:block;text-align:center;text-decoration:none">Patikaya dön</a>
       ${
         passed
           ? ''
-          : `<a class="ghost" href="#/" style="display:block;text-align:center;margin-top:10px">
+          : `<a class="btn ghost" href="#/" style="display:block;text-align:center;text-decoration:none;margin-top:10px">
                Tekrar kuyruğuna git
              </a>`
       }

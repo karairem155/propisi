@@ -354,12 +354,16 @@ button:active {
   transform: translateY(1px);
 }
 
-button.primary {
+/* Seçici yalnız `button`u kapsıyordu; `<a class="btn primary">` beyaz
+   kalıyor ve beyaz kartın üstünde birincil eylem görünmez oluyordu. */
+button.primary,
+a.btn.primary {
   background: var(--blue);
   color: #fff;
 }
 
-button.ghost {
+button.ghost,
+a.btn.ghost {
   background: var(--sky-soft);
   color: var(--sky-ink);
   box-shadow: none;
@@ -1607,6 +1611,15 @@ nav.tabs .tab-badge {
   opacity: 0.75;
 }
 
+/* El yazısı metin.
+   Sınıf adı bunu vaat ediyordu ama tanımı yoktu — her kullanım yerinde ayrı
+   ayrı (.quiz-prompt.cursive, .word-answer .cursive ...) tanımlanmıştı, yani
+   yeni bir yerde `class="cursive"` yazmak sessizce hiçbir şey yapmıyordu. */
+.cursive {
+  font-family: 'Bad Script', cursive;
+  font-weight: 400;
+}
+
 /* ── Kontrol noktası (sınav) ─────────────────────────────────────────────── */
 
 .exam-hero {
@@ -1689,9 +1702,14 @@ nav.tabs .tab-badge {
 
 /* Kısa konular el yazısıyla, uzun listeler normal metinle. */
 .exam-txt .cursive {
-  font-size: 21px;
+  font-size: 22px;
   line-height: 1;
   color: var(--sky-ink);
+}
+
+.bar-name .cursive {
+  font-size: 19px;
+  line-height: 1;
 }
 
 .exam-txt .fine {
