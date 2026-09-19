@@ -39,7 +39,7 @@ import { scoreShape, shapeMessage, type ShapeResult } from '../grading/shape';
 import { ensureCard, review } from '../srs/scheduler';
 import { nextAfter } from '../srs/flow';
 import { Rating } from '../srs/cards';
-import { getSetting, saveAttempt } from '../db/db';
+import { getSetting, saveAttempt, setSetting } from '../db/db';
 import { recordReview } from '../srs/stats';
 import { pushResult, examActive } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
@@ -49,6 +49,20 @@ import { ELEMENTS, LEVELS, findJoin, findWord, levelOfLetter } from '../data/cur
 const INK_COLOR = '#14213d';
 /** Bu puanın altı sayılmaz; kademe ilerlemez. */
 const PASS = 0.72;
+
+/**
+ * Yarım kalan dersin saklanması.
+ *
+ * Ders yedi denemelik bir dizi ve durumu yalnız bellekte duruyordu. iOS arka
+ * plandaki web görünümünü agresif biçimde atıyor: telefon çalarsa kullanıcı
+ * geri döndüğünde beşinci denemedeki ders sıfırdan başlıyordu. Kademe ve
+ * puanlar kaydediliyor; hamleler DEĞİL (hem büyük hem gereksiz — yeni deneme
+ * temiz tuvalle başlar).
+ */
+type Saved = { stepIndex: number; passedInStep: number; scores: number[]; peeked: boolean; at: number };
+const RESUME_KEY = (subject: string) => `lesson:${subject}`;
+/** Bundan eskisi geri yüklenmez — bir hafta önceki yarım ders artık geçerli değil. */
+const RESUME_MAX_AGE = 24 * 3600_000;
 
 type Step = { stage: 1 | 2 | 3; need: number; label: string; alpha: number };
 
@@ -375,15 +389,48 @@ export function render(root: HTMLElement, subject?: string): () => void {
     { penOnly: false, usePredicted: true },
   );
 
+  const saveProgress = () => {
+    if (exam) return;
+    void setSetting<Saved>(RESUME_KEY(target), {
+      stepIndex,
+      passedInStep,
+      scores: scores.slice(),
+      peeked,
+      at: Date.now(),
+    });
+  };
+  const clearProgress = () => {
+    if (!exam) void setSetting<Saved | null>(RESUME_KEY(target), null);
+  };
+
   // — kurulum —
   void (async () => {
-    const [saved] = await Promise.all([
+    const [savedPaper, resume] = await Promise.all([
       getSetting<PaperConfig>('paper', DEFAULT_PAPER),
+      exam
+        ? Promise.resolve(null)
+        : getSetting<Saved | null>(RESUME_KEY(target), null),
       openLesson(target),
       ensureGuideFont(),
     ]);
     if (disposed) return;
-    paper = saved;
+    paper = savedPaper;
+
+    if (resume && Date.now() - resume.at < RESUME_MAX_AGE && resume.stepIndex < LESSON.length) {
+      stepIndex = resume.stepIndex;
+      passedInStep = resume.passedInStep;
+      scores.push(...resume.scores);
+      peeked = resume.peeked;
+      stepLabel.textContent = step().label;
+      resultBox.innerHTML = `<div class="note" style="text-align:center">
+        Kaldığın yerden devam — ${
+          passedTotal()
+            ? `${passedTotal()} / ${TOTAL} tamamdı.`
+            : `${scores.length} deneme yapılmıştı, hepsi ortalamaya girecek.`
+        }
+      </div>`;
+    }
+
     remeasure();
     drawDots();
   })();
@@ -495,6 +542,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
     }
     drawDots();
     finished = stepIndex >= LESSON.length;
+    if (!finished) saveProgress();
 
     const noun = info.element ? 'şekil' : info.word ? 'kelime' : 'harf';
     const msg = shapeMessage(result, noun);
@@ -562,6 +610,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
    * Her deneme ayrı not olsaydı yedi tekrar kartı yapay olarak ileri atardı.
    */
   async function finishLesson(lastChecks: string[]): Promise<void> {
+    clearProgress();
     const average = scores.reduce((n, x) => n + x, 0) / Math.max(1, scores.length);
 
     const cardId = info.join
