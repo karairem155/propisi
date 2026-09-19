@@ -3,7 +3,7 @@
 //
 // DIKKAT: SHELL listesi elle yazildi. vite.config.ts cikti adlarini sabit tutuyor
 // (hash yok) — yeni bir ekran/parca eklersen bu listeyi VE VERSION'u guncelle.
-const VERSION = "propisi-9c108976";
+const VERSION = "propisi-313e4c70";
 const SHELL = [
   "./",
   "./art/badge-100-reviews.webp",
@@ -35,48 +35,48 @@ const SHELL = [
   "./art/today-empty.webp",
   "./art/today-hero.webp",
   "./art/today-streak.webp",
-  "./assets/BadScript-Regular.ttf",
-  "./assets/index.css",
-  "./assets/nunito-cyrillic.woff2",
-  "./assets/nunito-latin-ext.woff2",
-  "./assets/nunito-latin.woff2",
+  "./assets/BadScript-Regular-kNvreJEi.ttf",
+  "./assets/index-BFy8l1pS.css",
+  "./assets/nunito-cyrillic-CY6AOgYE.woff2",
+  "./assets/nunito-latin-BzFMHfZw.woff2",
+  "./assets/nunito-latin-ext-CXYtwYOx.woff2",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./index.html",
-  "./js/alfabe.js",
-  "./js/app.js",
-  "./js/av.js",
-  "./js/baslangic.js",
-  "./js/calisma.js",
-  "./js/confusables.js",
-  "./js/curriculum.js",
-  "./js/dikte.js",
-  "./js/eslestir.js",
-  "./js/flow.js",
-  "./js/guide.js",
-  "./js/ilerleme.js",
-  "./js/ink.js",
-  "./js/kontrol.js",
-  "./js/labels.js",
-  "./js/mascots.js",
-  "./js/ozet.js",
-  "./js/paper.js",
-  "./js/patika.js",
-  "./js/profil.js",
-  "./js/records.js",
-  "./js/rolldown-runtime.js",
-  "./js/sandbox.js",
-  "./js/scheduler.js",
-  "./js/session.js",
-  "./js/shape.js",
-  "./js/starts.js",
-  "./js/stats.js",
-  "./js/tani.js",
-  "./js/tekrar.js",
-  "./js/test-latency.js",
-  "./js/test-scribble.js",
-  "./js/test-voice.js",
+  "./js/alfabe-D3TR5xAV.js",
+  "./js/app-CW3Am1rm.js",
+  "./js/av-D0u1aw5X.js",
+  "./js/baslangic-DFsaezSj.js",
+  "./js/calisma-V7P_xfgG.js",
+  "./js/confusables-C4jrEv9P.js",
+  "./js/curriculum-BORBEl7b.js",
+  "./js/dikte-DHFO9BRv.js",
+  "./js/eslestir-FYX_Deze.js",
+  "./js/flow-DcwckMzI.js",
+  "./js/guide-negCgSGR.js",
+  "./js/ilerleme-B9dmLdUh.js",
+  "./js/ink-DwApjVaZ.js",
+  "./js/kontrol-yzRjO2iG.js",
+  "./js/labels-BlcmW2l4.js",
+  "./js/mascots-DlawBOTU.js",
+  "./js/ozet-BIX9YJDl.js",
+  "./js/paper-MkVFdroW.js",
+  "./js/patika-CN8ARIuV.js",
+  "./js/profil-Br971rW9.js",
+  "./js/records-DfblZ4V7.js",
+  "./js/rolldown-runtime-DK3Fl9T5.js",
+  "./js/sandbox-C5lANI7F.js",
+  "./js/scheduler-BhBwXXjA.js",
+  "./js/session-DKqvrCkB.js",
+  "./js/shape-DKG17HQG.js",
+  "./js/starts-BxEyZQx_.js",
+  "./js/stats-CP9MBSiO.js",
+  "./js/tani-_e0CBQlv.js",
+  "./js/tekrar-D9FlnhOZ.js",
+  "./js/test-latency-BPP-oFcW.js",
+  "./js/test-scribble-CrvOgWVy.js",
+  "./js/test-voice-x98XCvMi.js",
   "./manifest.webmanifest"
 ];
 
@@ -111,8 +111,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // DIKKAT: caches.match(request) BUTUN onbelleklerde arar — aktivasyon
+  // sirasinda olmekte olan eski surumun dosyasini verebiliyordu. Yalniz kendi
+  // surumunun onbellegine bak.
   event.respondWith(
-    caches.match(request).then((cached) => {
+    caches.open(VERSION).then((cache) => cache.match(request)).then((cached) => {
       if (cached) return cached;
       return fetch(request).then((response) => {
         if (response.ok && response.type === "basic") {
