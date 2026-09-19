@@ -218,6 +218,17 @@ export function render(root: HTMLElement, subject?: string): () => void {
   const scores: number[] = [];
   let checked = false;
   let finished = false;
+  /**
+   * Değerlendirme katmanı yeniden çizilebilsin diye saklanan durum.
+   *
+   * NEDEN VAR: sonuç kartı belirince yüzey kısalıyor (234 → 220 px ölçüldü),
+   * ResizeObserver tetikleniyor, tuvaller yeniden kuruluyor ve mürekkep
+   * katmanı SİLİNİYORDU. Yani kehribar/mercan geri bildirimi — ekranın
+   * "neyi yanlış yaptın" anlatan tek görsel aracı — çoğu zaman hiç
+   * görünmüyordu. Yeniden boyutlanınca aynı hamlelerle yeniden hesaplanıyor.
+   */
+  let gradedAlign: 'none' | 'translate' = 'none';
+  let revealed = false;
   let peeked = false;
   let nextHash = '#/ozet';
 
@@ -249,9 +260,17 @@ export function render(root: HTMLElement, subject?: string): () => void {
     ).join('');
   };
 
-  const redraw = () => {
+  /**
+   * `reveal` — kılavuzsuz kademede hata yapınca doğru şekli göster.
+   *
+   * Kullanıcı el yazısını bilmiyorsa "şu bölgeyi atladın" tek başına bir şey
+   * öğretmiyor; neyi atladığını görmesi gerekiyor. Dikte ekranı bunu baştan
+   * yapıyordu, ders ekranı yapmıyordu. Yalnız DENEME BİTTİKTEN sonra çiziliyor,
+   * yani ipucu değil düzeltme.
+   */
+  const redraw = (reveal = revealed) => {
     drawPaper(surface.ctx.paper, surface.width, surface.height, paper);
-    const alpha = step().alpha;
+    const alpha = reveal ? Math.max(step().alpha, 0.24) : step().alpha;
     const paint = painter();
     if (paint && alpha > 0) {
       const ctx = surface.ctx.paper;
@@ -266,6 +285,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         drawStress(surface.ctx.paper, target, box, info.stress, Math.min(1, alpha * 3));
       }
       // İşaret yalnızca kılavuz görünürken; Kademe 3'te ipucu yok.
+      // Düzeltmede de gösteriliyor: "buradan başlamalıydın".
       const at = startAt();
       if (at) drawStartMarker(surface.ctx.paper, at, paper.rowHeight, Math.min(1, alpha * 3));
     }
@@ -282,6 +302,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
       elBox = measureElements(paper, surface.width, box.baseline, elementCount(target));
     }
     redraw();
+    // Değerlendirme ekrandaysa katmanı yeni ölçüye göre yeniden kur.
+    if (checked) {
+      const again = scoreNow();
+      if (again) surface.ctx.live.drawImage(again.overlay, 0, 0);
+    }
   };
   surface.setResizeHandler(remeasure);
 
@@ -296,6 +321,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
   const nextAttempt = () => {
     strokes.length = 0;
     checked = false;
+    revealed = false;
     resultBox.innerHTML = '';
     checkBtn.textContent = 'Kontrol et';
     stepLabel.textContent = step().label;
@@ -402,11 +428,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
     if (strokes.length) void grade();
   });
 
-  async function grade(): Promise<void> {
+  /** Mevcut hamleleri mevcut yüzey ölçüsünde değerlendirir. */
+  function scoreNow(): ShapeResult | null {
     const paintTarget = painter();
-    if (!paintTarget) return;
-
-    const result = scoreShape({
+    if (!paintTarget) return null;
+    return scoreShape({
       width: surface.width,
       height: surface.height,
       drawTarget: paintTarget,
@@ -415,13 +441,20 @@ export function render(root: HTMLElement, subject?: string): () => void {
       },
       // 0.22 çok cömertti: eksik tepe bile tolerans bandına giriyordu.
       tolerance: Math.max(7, paper.rowHeight * 0.13),
-      // Kılavuz yokken nereye yazdığı değil, ne yazdığı önemli.
-      align: step().alpha === 0 ? 'translate' : 'none',
+      align: gradedAlign,
     });
+  }
+
+  async function grade(): Promise<void> {
+    if (!painter()) return;
+
+    // Kılavuz yokken nereye yazdığı değil, ne yazdığı önemli.
+    gradedAlign = step().alpha === 0 ? 'translate' : 'none';
+    const result = scoreNow();
+    if (!result) return;
 
     checked = true;
     syncButtons();
-    surface.ctx.live.drawImage(result.overlay, 0, 0);
 
     // Başlangıç denetimi — yönün yakalanabilen yarısı.
     const at = startAt();
@@ -441,6 +474,12 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
     const passed = result.score >= PASS && !startOff && !lifted;
     scores.push(result.score);
+
+    // Kılavuz görünmüyorken hata yapıldıysa doğru şekli arkaya koy. Sınavda
+    // tek hak var, orada geçse de geçmese de doğrusu gösteriliyor.
+    revealed = (!passed && step().alpha === 0) || exam;
+    redraw();
+    surface.ctx.live.drawImage(result.overlay, 0, 0);
 
     if (passed) {
       passedInStep++;

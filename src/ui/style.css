@@ -125,6 +125,16 @@ main.screen {
   -webkit-overflow-scrolling: touch;
 }
 
+/* iPad'de içerik kenardan kenara uzuyor ve satırlar okunmaz uzunluğa
+   çıkıyordu. Çizim ekranları (flush) hariç — orada geniş tuval isteniyor. */
+@media (min-width: 620px) {
+  main.screen:not(.flush) > * {
+    max-width: 580px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 main.screen.flush {
   display: flex;
   flex-direction: column;
