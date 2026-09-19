@@ -37,7 +37,7 @@ export function render(root: HTMLElement): () => void {
       <button id="importBtn" class="ghost">JSON içe aktar</button>
       <input type="file" id="file" accept="application/json" hidden>
       <button id="persist" class="ghost">Kalıcı depolama iste</button>
-      <button id="clear" class="danger">Tümünü sil</button>
+      <button id="clear" class="danger">Denemeleri sil</button>
     </div>
     <p class="note" id="status" style="margin-top:12px">—</p>
 
@@ -116,10 +116,27 @@ export function render(root: HTMLElement): () => void {
     await refresh();
   });
 
+  // "Tümünü sil" yazıyordu ama yalnız denemeleri siliyor — tekrar kartları ve
+  // ayarlar duruyor. Yıkıcı düğmenin ne yaptığını olduğundan geniş anlatması,
+  // az anlatmasından daha kötü.
   root.querySelector('#clear')!.addEventListener('click', async () => {
-    if (!confirm('Tüm kayıtlar silinecek. Önce dışa aktardın mı?')) return;
+    const n = await countAttempts();
+    if (!n) {
+      status.textContent = 'Silinecek deneme yok.';
+      return;
+    }
+    if (
+      !confirm(
+        `${n} ham deneme kaydı silinecek. Tekrar kartların ve ayarların KALACAK.
+
+` +
+          'Önce dışa aktardın mı?',
+      )
+    ) {
+      return;
+    }
     await clearAttempts();
-    status.textContent = 'Tüm kayıtlar silindi.';
+    status.textContent = `${n} deneme silindi. Tekrar kartları ve ayarlar duruyor.`;
     await refresh();
   });
 

@@ -182,7 +182,19 @@ export function render(root: HTMLElement): () => void {
       }
     });
 
+    // Bu düğme BÜTÜN FSRS zamanlamasını siliyor — kullanıcının biriktirdiği
+    // ilerlemenin tamamı. Onaysız duruyordu; geliştirici bölümünde olması onu
+    // daha az yıkıcı yapmıyor, yanlışlıkla basılması aynı sonucu veriyor.
     root.querySelector('#unseed')!.addEventListener('click', async () => {
+      const { allCards } = await import('../srs/scheduler');
+      const n = (await allCards()).filter((c) => c.fsrs.reps > 0).length;
+      const warning = n
+        ? `${n} kartta çalışılmış ilerleme var ve GERİ ALINAMAZ. ` +
+          'Kayıtlar ekranından yedek aldın mı?'
+        : 'Henüz çalışılmış kart yok.';
+      if (!confirm(`Bütün tekrar kartları silinecek.
+
+${warning}`)) return;
       const { db } = await import('../db/db');
       await (await db()).clear('cards');
       msg.textContent = 'Tüm kartlar silindi.';
