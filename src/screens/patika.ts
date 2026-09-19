@@ -94,10 +94,13 @@ export function render(root: HTMLElement): () => void {
             ? [
                 {
                   kind: 'join' as const,
+                  // Düğüm ilk çifte gidiyor; ders açılınca o seviyenin bütün
+                  // çiftleri kuyruğa giriyor (bkz. calisma.ts → openLesson).
+                  subject: level.joins[0]!,
                   art: level.joins[0]!,
                   label: 'Bağlantı',
                   sub: level.joins.join(' · '),
-                  ...stateOf(`joins-${level.id}`),
+                  ...stateOf(level.joins[0]!),
                 },
               ]
             : []),

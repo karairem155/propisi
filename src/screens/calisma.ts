@@ -43,7 +43,7 @@ import { recordReview } from '../srs/stats';
 import { pushResult, seenSubjects } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
-import { ELEMENTS, LEVELS, findWord, levelOfLetter } from '../data/curriculum';
+import { ELEMENTS, LEVELS, findJoin, findWord, levelOfLetter } from '../data/curriculum';
 
 const INK_COLOR = '#14213d';
 /** Bu puanın altı sayılmaz; kademe ilerlemez. */
@@ -64,6 +64,8 @@ type Info = {
   say: string;
   element: boolean;
   word: boolean;
+  /** Harf çifti mi — kalem kaldırmama kuralı yalnız burada geçerli. */
+  join: boolean;
   /** Vurgulu harfin indeksi — yalnız kelimelerde. */
   stress: number;
 };
@@ -72,7 +74,28 @@ type Info = {
 function describe(subject: string): Info {
   const el = ELEMENTS.find((e) => e.id === subject);
   if (el) {
-    return { title: el.name, sub: el.ru, say: '', element: true, word: false, stress: -1 };
+    return {
+      title: el.name,
+      sub: el.ru,
+      say: '',
+      element: true,
+      word: false,
+      join: false,
+      stress: -1,
+    };
+  }
+
+  const j = findJoin(subject);
+  if (j) {
+    return {
+      title: subject,
+      sub: 'Kalem kaldırmadan yaz',
+      say: subject,
+      element: false,
+      word: false,
+      join: true,
+      stress: -1,
+    };
   }
   const w = findWord(subject);
   if (w) {
@@ -82,6 +105,7 @@ function describe(subject: string): Info {
       say: w.word.ru,
       element: false,
       word: true,
+      join: false,
       stress: w.word.stress,
     };
   }
@@ -95,11 +119,20 @@ function describe(subject: string): Info {
         say: l.say ?? l.ch,
         element: false,
         word: false,
+        join: false,
         stress: -1,
       };
     }
   }
-  return { title: subject, sub: '', say: subject, element: false, word: false, stress: -1 };
+  return {
+    title: subject,
+    sub: '',
+    say: subject,
+    element: false,
+    word: false,
+    join: false,
+    stress: -1,
+  };
 }
 
 function ratingOf(score: number): Rating.Again | Rating.Hard | Rating.Good | Rating.Easy {
@@ -386,7 +419,12 @@ export function render(root: HTMLElement, subject?: string): () => void {
     const checks = failedChecks(result);
     if (startOff) checks.unshift('start');
 
-    const passed = result.score >= PASS && !startOff;
+    // brief 7.3 — bağlantının ASIL kuralı безотрывное: iki harf tek hamlede.
+    // Şekil doğru olsa bile kalem kalktıysa bağlantı öğrenilmemiş demektir.
+    const lifted = info.join && strokes.length > 1;
+    if (lifted) checks.unshift('lift');
+
+    const passed = result.score >= PASS && !startOff && !lifted;
     scores.push(result.score);
 
     if (passed) {
@@ -406,13 +444,21 @@ export function render(root: HTMLElement, subject?: string): () => void {
     resultBox.innerHTML = `
       <div class="card result-card">
         <div class="result-head">
-          <b>${startOff && !result.missedSection ? 'Yanlış yerden başladın' : msg.title}</b>
+          <b>${
+            lifted
+              ? 'Kalem kalktı'
+              : startOff && !result.missedSection
+                ? 'Yanlış yerden başladın'
+                : msg.title
+          }</b>
           <span class="result-score">${pct(result.score)}</span>
         </div>
         <p class="fine" style="margin:4px 0 12px">${
-          startOff
-            ? `Yeşil noktadan başlamalısın${start?.note ? ` — ${start.note.toLocaleLowerCase('tr')}` : ''}. ${msg.detail}`
-            : msg.detail
+          lifted
+            ? `${strokes.length} hamlede yazdın. Bağlantıda iki harf <b>tek hamlede</b>, kalem kaldırmadan yazılır — asıl öğrenilen şey bu.`
+            : startOff
+              ? `Yeşil noktadan başlamalısın${start?.note ? ` — ${start.note.toLocaleLowerCase('tr')}` : ''}. ${msg.detail}`
+              : msg.detail
         }</p>
         <div class="bar-row">
           <span class="bar-name">İsabet</span>
@@ -424,6 +470,17 @@ export function render(root: HTMLElement, subject?: string): () => void {
           <div class="bar-track"><i style="width:${pct(result.recall)}%;background:var(--amber)"></i></div>
           <b>${pct(result.recall)}</b>
         </div>
+        ${
+          info.join
+            ? `<div class="bar-row">
+                 <span class="bar-name">Hamle</span>
+                 <div class="bar-track"><i style="width:${strokes.length === 1 ? 100 : 30}%;background:${
+                   strokes.length === 1 ? 'var(--mint)' : 'var(--coral)'
+                 }"></i></div>
+                 <b>${strokes.length}</b>
+               </div>`
+            : ''
+        }
         <p class="fine">${
           passed
             ? `${passedTotal()} / ${TOTAL} tamam.`
@@ -446,7 +503,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
   async function finishLesson(lastChecks: string[]): Promise<void> {
     const average = scores.reduce((n, x) => n + x, 0) / Math.max(1, scores.length);
 
-    await review(`${kindOf(target)}:${target}:write`, ratingOf(average), lastChecks);
+    const cardId = info.join
+      ? `join:${target}`
+      : `${kindOf(target)}:${target}:write`;
+    await review(cardId, ratingOf(average), lastChecks);
     await recordReview();
     pushResult({
       subject: target,
@@ -514,8 +574,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
   };
 }
 
-function kindOf(subject: string): 'letter' | 'element' | 'word' {
+function kindOf(subject: string): 'letter' | 'element' | 'word' | 'join' {
   if (ELEMENTS.some((e) => e.id === subject)) return 'element';
+  if (findJoin(subject)) return 'join';
   return findWord(subject) ? 'word' : 'letter';
 }
 
@@ -526,6 +587,14 @@ function kindOf(subject: string): 'letter' | 'element' | 'word' {
 async function openLesson(subject: string) {
   const element = ELEMENTS.find((e) => e.id === subject);
   if (element) return ensureCard('element:write', subject, 'elements');
+
+  const j = findJoin(subject);
+  if (j) {
+    for (const other of j.level.joins) {
+      if (other !== subject) await ensureCard('join', other, j.level.id);
+    }
+    return ensureCard('join', subject, j.level.id);
+  }
 
   const w = findWord(subject);
   if (w) {

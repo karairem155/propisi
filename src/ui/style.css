@@ -1558,3 +1558,51 @@ nav.tabs .tab-badge {
   font-size: 17px;
   vertical-align: -2px;
 }
+
+/* ── Eşleştirme ─────────────────────────────────────────────────────────── */
+
+.match-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.match-col {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.match-item {
+  min-height: 66px;
+  width: 100%;
+  font-size: 15px;
+  border: 2px solid transparent;
+  padding: 10px;
+}
+
+.match-item.cursive {
+  font-family: 'Bad Script', cursive;
+  font-weight: 400;
+  font-size: 30px;
+}
+
+.match-item.sel {
+  border-color: var(--blue);
+  background: var(--sky-soft);
+}
+
+.match-item.right {
+  border-color: var(--mint);
+  background: var(--ok-bg);
+  opacity: 1;
+}
+
+.match-item.wrong {
+  border-color: var(--coral);
+  background: #fdeceb;
+}
+
+.match-item:disabled {
+  opacity: 0.75;
+}

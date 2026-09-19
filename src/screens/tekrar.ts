@@ -35,6 +35,7 @@ export const CHECK_LABELS: Record<string, string> = {
   humps: 'tepe sayısı',
   length: 'uzunluk',
   shape: 'şekil uyumu',
+  lift: 'kalem kaldırma',
 };
 
 type Weak = { subject: string; label: string; isLetter: boolean; total: number; top: string };

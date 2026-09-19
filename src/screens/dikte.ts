@@ -242,6 +242,8 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
     await review(`word:${target}:dictation`, rating, score < PASS ? ['shape'] : []);
     await recordReview();
+    // Yazabilen ve duyabilen için sıradaki adım anlamı tanımak.
+    if (entry) await ensureCard('word:read', target, entry.level.id);
     pushResult({ subject: target, label: target, score, checks: [], at: Date.now() });
     await saveAttempt({
       id: newId(),

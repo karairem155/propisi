@@ -209,6 +209,14 @@ export const HARD_WORDS: { ru: string; tr: string; after: string; why: string }[
 /** Alfabedeki 33 harf, standart sırada — Alfabe ızgarası bunu kullanır. */
 export const ALPHABET = [...'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'];
 
+/** Bir harf çiftinin hangi seviyede öğretildiği. */
+export function findJoin(pair: string): { pair: string; level: Level } | undefined {
+  for (const level of LEVELS) {
+    if (level.joins.includes(pair)) return { pair, level };
+  }
+  return undefined;
+}
+
 /** Bir kelimenin hangi seviyede öğretildiği ve kayıtlı bilgileri. */
 export function findWord(ru: string): { word: WordItem; level: Level } | undefined {
   for (const level of LEVELS) {

@@ -86,6 +86,12 @@ const prefixRoutes: Route[] = [
     prefix: '/av/',
     load: async () => (await import('./screens/av')).render,
   },
+  {
+    title: 'Eşleştirme',
+    tab: 'path',
+    prefix: '/eslestir/',
+    load: async () => (await import('./screens/eslestir')).render,
+  },
 ];
 
 const app = document.querySelector<HTMLElement>('#app')!;

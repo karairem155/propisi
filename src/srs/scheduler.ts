@@ -89,6 +89,8 @@ const PRACTICABLE: CardKind[] = [
   'letter:read',
   'letter:hunt',
   'word:dictation',
+  'join',
+  'word:read',
 ];
 
 /**
@@ -99,6 +101,7 @@ export function practiceHref(card: SrsCard): string {
   const sub = encodeURIComponent(card.subject);
   if (card.kind === 'letter:read') return `#/tani/${sub}`;
   if (card.kind === 'letter:hunt') return `#/av/${sub}`;
+  if (card.kind === 'word:read') return `#/eslestir/${sub}`;
   if (card.kind === 'word:dictation') return `#/dikte/${sub}`;
   return `#/calis/${sub}`;
 }
