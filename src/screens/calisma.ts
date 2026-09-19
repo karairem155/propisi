@@ -367,6 +367,8 @@ export function render(root: HTMLElement, subject?: string): () => void {
       },
       // 0.22 çok cömertti: eksik tepe bile tolerans bandına giriyordu.
       tolerance: Math.max(7, paper.rowHeight * 0.13),
+      // Kılavuz yokken nereye yazdığı değil, ne yazdığı önemli.
+      align: step().alpha === 0 ? 'translate' : 'none',
     });
 
     checked = true;
@@ -477,6 +479,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
     // demek değil (brief 6.1 — лш ile ми görsel olarak ayırt edilemez).
     if (kindOf(target) === 'letter') {
       await ensureCard('letter:read', target, levelOfLetter(target)?.id ?? 'g1');
+    }
+    // Yazabildiğin kelime artık dikteye de girer — duyup yazmak ayrı beceri.
+    const wordEntry = findWord(target);
+    if (wordEntry) {
+      await ensureCard('word:dictation', target, wordEntry.level.id);
     }
 
     const queue = await buildQueue();

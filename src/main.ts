@@ -74,6 +74,12 @@ const prefixRoutes: Route[] = [
     prefix: '/tani/',
     load: async () => (await import('./screens/tani')).render,
   },
+  {
+    title: 'Dikte',
+    tab: 'path',
+    prefix: '/dikte/',
+    load: async () => (await import('./screens/dikte')).render,
+  },
 ];
 
 const app = document.querySelector<HTMLElement>('#app')!;

@@ -1522,3 +1522,26 @@ nav.tabs .tab-badge {
 .quiz-option:disabled {
   opacity: 0.55;
 }
+
+/* Dikte sonucunda doğru yazımın gösterimi. */
+.word-answer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--sky-soft);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.word-answer .cursive {
+  font-family: 'Bad Script', cursive;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--blue);
+}
+
+.word-answer b {
+  font-size: 15px;
+  font-weight: 800;
+}

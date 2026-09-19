@@ -57,6 +57,16 @@ export type ShapeOptions = {
   tolerance?: number;
   /** Örnekleme oranı — hız için küçültülür. */
   scale?: number;
+  /**
+   * Kılavuz yokken (Kademe 3, dikte) kullanıcı harfi sayfanın başka bir yerine
+   * yazabilir. 'translate' hedefi kullanıcının yazdığı yere kaydırıp öyle
+   * karşılaştırır — konum hatası şekil hatası sayılmasın.
+   *
+   * ÖLÇEK BİLEREK NORMALİZE EDİLMİYOR. Brief 6.1 uyarıyor: Procrustes ölçek
+   * normalizasyonu iki tepeli `и`yi üç tepeli `ш`ya mükemmel uyduruyor.
+   * Kayma güvenli, ölçek değil.
+   */
+  align?: 'none' | 'translate';
 };
 
 const MISSED = [242, 166, 59]; // --amber
@@ -69,7 +79,12 @@ export function scoreShape(opts: ShapeOptions): ShapeResult {
   const tol = Math.max(1, Math.round((opts.tolerance ?? 14) * scale));
 
   const target = rasterize(w, h, scale, opts.drawTarget);
-  const user = rasterize(w, h, scale, opts.drawUser);
+  let user = rasterize(w, h, scale, opts.drawUser);
+
+  if (opts.align === 'translate') {
+    const shift = centerDelta(target, user, w, h);
+    if (shift) user = translate(user, w, h, shift.dx, shift.dy);
+  }
 
   const targetTol = dilate(target, w, h, tol);
   const userTol = dilate(user, w, h, tol);
@@ -113,6 +128,58 @@ export function scoreShape(opts: ShapeOptions): ShapeResult {
     missedSection,
     overlay: buildOverlay(opts.width, opts.height, w, h, target, user, targetTol, userTol),
   };
+}
+
+
+/** Maskenin mürekkep sınırlarının orta noktası. */
+function inkCenter(
+  mask: Uint8Array,
+  w: number,
+  h: number,
+): { cx: number; cy: number } | null {
+  let minX = w;
+  let maxX = -1;
+  let minY = h;
+  let maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!mask[y * w + x]) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (maxX < minX) return null;
+  return { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
+}
+
+/** Kullanıcının yazdığı yeri hedefin üstüne taşımak için gereken kayma. */
+function centerDelta(
+  target: Uint8Array,
+  user: Uint8Array,
+  w: number,
+  h: number,
+): { dx: number; dy: number } | null {
+  const t = inkCenter(target, w, h);
+  const u = inkCenter(user, w, h);
+  if (!t || !u) return null;
+  return { dx: Math.round(t.cx - u.cx), dy: Math.round(t.cy - u.cy) };
+}
+
+function translate(mask: Uint8Array, w: number, h: number, dx: number, dy: number): Uint8Array {
+  if (!dx && !dy) return mask;
+  const out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const sy = y - dy;
+    if (sy < 0 || sy >= h) continue;
+    for (let x = 0; x < w; x++) {
+      const sx = x - dx;
+      if (sx < 0 || sx >= w) continue;
+      out[y * w + x] = mask[sy * w + sx]!;
+    }
+  }
+  return out;
 }
 
 /** Çizim geri çağrısını küçültülmüş bir maskeye rasterleştirir. */
