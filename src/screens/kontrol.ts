@@ -162,7 +162,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
     if (!exam) {
       root.innerHTML = `<div class="warn">Böyle bir kontrol noktası yok: <code>${target}</code></div>
-        <a class="btn primary" href="#/patika" style="display:block;text-align:center;text-decoration:none">Patikaya dön</a>`;
+        <a class="btn primary on-blue" href="#/patika" style="display:block;text-align:center;text-decoration:none">Patikaya dön</a>`;
       return;
     }
 
@@ -203,7 +203,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
           .join('')}
       </ol>
 
-      <button class="primary" id="start" style="width:100%">
+      <button class="primary on-blue" id="start" style="width:100%">
         Sınavı başlat · ${exam.steps.length} adım
       </button>
       <a class="btn ghost" href="#/patika" style="display:block;text-align:center;text-decoration:none;margin-top:10px">
@@ -257,7 +257,7 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
     // Sayfa yenilenmişse oturum sıfırlanır ve sınav kaydı kalmaz.
     root.innerHTML = `
       <div class="warn">Sınav kaydı bulunamadı — sayfa yenilenmiş olabilir.</div>
-      <a class="btn primary" href="#/kontrol/${encodeURIComponent(target)}"
+      <a class="btn primary on-blue" href="#/kontrol/${encodeURIComponent(target)}"
          style="display:block;text-align:center;text-decoration:none">Sınavı yeniden çöz</a>`;
     return () => {};
   }
@@ -345,7 +345,7 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
         }
       </div>
 
-      <a class="btn primary" href="#/patika" style="display:block;text-align:center;text-decoration:none">Patikaya dön</a>
+      <a class="btn primary on-blue" href="#/patika" style="display:block;text-align:center;text-decoration:none">Patikaya dön</a>
       ${
         passed
           ? ''

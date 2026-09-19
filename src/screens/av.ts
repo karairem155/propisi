@@ -77,7 +77,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         <b>${target}</b> harfini içeren kelime yok — müfredatta bu harfle yazılabilen
         kelime tanımlanmamış. Harf avı bu harf için atlandı.
       </div>
-      <button class="primary" id="skip" style="width:100%">
+      <button class="primary on-blue" id="skip" style="width:100%">
         ${playlistActive() ? 'Sonraki adım' : 'Geri dön'}
       </button>`;
     huntBox.querySelector('#skip')!.addEventListener('click', () => {
@@ -111,7 +111,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       </div>
       <p class="fine" id="count" style="text-align:center"></p>
       <div id="huntFoot"></div>
-      <button class="primary" id="done" style="width:100%;margin-top:6px">İşaretlemeyi bitir</button>
+      <button class="primary on-blue" id="done" style="width:100%;margin-top:6px">İşaretlemeyi bitir</button>
     `;
 
     const canvas = huntBox.querySelector<HTMLCanvasElement>('#hcanvas')!;
@@ -258,6 +258,20 @@ export function render(root: HTMLElement, subject?: string): () => void {
     });
   }
 
+  /**
+   * Tuval ölçüsü ve harf sınırları paint() içinde BİR KEZ hesaplanıyor.
+   * iPad döndürülürse bitmap eski ölçüde kalıyor, CSS onu esnetiyor ve
+   * dokunma isabet testi (spansOf) kaymış koordinatlarla çalışıyor —
+   * yanlış harf işaretleniyor, puan haksız çıkıyor. Yeniden çiz.
+   *
+   * Cevaplanmış soru yeniden çizilmez: sonuç kutusu kaybolur.
+   */
+  const onResize = () => {
+    if (!disposed && !answered) paint();
+  };
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
+
   void (async () => {
     await Promise.all([
       ensureGuideFont(),
@@ -268,5 +282,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   return () => {
     disposed = true;
+    window.removeEventListener('resize', onResize);
+    window.removeEventListener('orientationchange', onResize);
   };
 }

@@ -87,7 +87,7 @@ export function render(root: HTMLElement): () => void {
     </div>
 
     <div class="row" style="margin-top:14px">
-      <a class="btn primary" id="again" href="#/" style="flex:1;text-align:center;text-decoration:none">Bitir</a>
+      <a class="btn primary on-blue" id="again" href="#/" style="flex:1;text-align:center;text-decoration:none">Bitir</a>
     </div>
   `;
 

@@ -15,7 +15,7 @@ import { attachPointer, type PointerHandle } from '../canvas/pointer';
 import { outlinePath, styleFor } from '../canvas/ink';
 import { drawPaper, DEFAULT_PAPER, type PaperConfig } from '../ui/paper';
 import { drawGuide, ensureGuideFont, measureGuide, targetPainter, type GuideBox } from '../ui/guide';
-import { scoreShape, shapeMessage } from '../grading/shape';
+import { scoreShape, shapeMessage, type ShapeResult } from '../grading/shape';
 import { ensureCard, review } from '../srs/scheduler';
 import { nextAfter } from '../srs/flow';
 import { Rating } from '../srs/cards';
@@ -99,6 +99,12 @@ export function render(root: HTMLElement, subject?: string): () => void {
   const remeasure = () => {
     box = measureGuide(surface.ctx.paper, target, paper, surface.width, surface.height);
     redraw(checked);
+    // Sonuç kartı belirince yüzey kısalıyor ve tuvaller yeniden kuruluyor;
+    // değerlendirme katmanı aksi hâlde siliniyor (bkz. calisma.ts, aynı hata).
+    if (checked) {
+      const again = scoreNow();
+      if (again) surface.ctx.live.drawImage(again.overlay, 0, 0);
+    }
   };
   surface.setResizeHandler(remeasure);
 
@@ -187,9 +193,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
     if (strokes.length) void grade();
   });
 
-  async function grade(): Promise<void> {
-    if (!box) return;
-    const result = scoreShape({
+  /** Mevcut hamleleri mevcut yüzey ölçüsünde değerlendirir. */
+  function scoreNow(): ShapeResult | null {
+    if (!box) return null;
+    return scoreShape({
       width: surface.width,
       height: surface.height,
       drawTarget: targetPainter(target, box),
@@ -200,6 +207,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
       // Kılavuz yok: nereye yazdığı değil, ne yazdığı önemli.
       align: 'translate',
     });
+  }
+
+  async function grade(): Promise<void> {
+    const result = scoreNow();
+    if (!result) return;
 
     checked = true;
     syncButtons();

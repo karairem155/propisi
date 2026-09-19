@@ -235,8 +235,35 @@ initSpeech();
 
 // Service worker SADECE üretimde. Geliştirmede kayıtlıysa her değişiklikte
 // önbellek temizlemek gerekiyor — o döngüye hiç girme.
+//
+// sw.js skipWaiting + clients.claim yapıyor, yani yeni sürüm hemen devralıyor.
+// AMA AÇIK SAYFA ESKİ KODU ÇALIŞTIRMAYA DEVAM EDİYOR. Ana ekrana eklenmiş bir
+// uygulama günlerce kapanmayabilir; kullanıcı yeni sürümü hiç görmez ve
+// "düzeltme gelmemiş" sanır. Devralma anında haber ver, yenilemeyi ona bırak —
+// çizimin ortasında kendiliğinden yenilemek veri kaybettirir.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('./sw.js');
+    void navigator.serviceWorker.register('./sw.js').then((reg) => {
+      // Uygulama öne geldiğinde yeni sürüm var mı diye bak.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') void reg.update();
+      });
+    });
   });
+
+  // İlk kurulumda da tetikleniyor; orada gösterilecek bir "yeni sürüm" yok.
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController) showUpdateBar();
+  });
+}
+
+function showUpdateBar(): void {
+  if (document.querySelector('#updateBar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'updateBar';
+  bar.className = 'update-bar';
+  bar.innerHTML = `<span>Yeni sürüm hazır.</span><button type="button">Yenile</button>`;
+  bar.querySelector('button')!.addEventListener('click', () => location.reload());
+  app.appendChild(bar);
 }

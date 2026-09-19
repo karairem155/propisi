@@ -31,7 +31,7 @@ export function render(root: HTMLElement): () => void {
       garanti değil — düzenli olarak dışa aktar.
     </p>
     <div class="row">
-      <button id="export" class="primary">JSON dışa aktar</button>
+      <button id="export" class="primary on-blue">JSON dışa aktar</button>
       <button id="importBtn" class="ghost">JSON içe aktar</button>
       <input type="file" id="file" accept="application/json" hidden>
       <button id="persist" class="ghost">Kalıcı depolama iste</button>

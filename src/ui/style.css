@@ -372,6 +372,19 @@ a.btn.primary {
   color: #fff;
 }
 
+/*
+ * Mavi zeminin ÜSTÜNDEKİ birincil eylem.
+ *
+ * `button.primary` arka planı `--blue`; sayfa arka planı da tam olarak aynı
+ * `--blue`. Beyaz kartın içinde doğru, ama doğrudan sayfaya konan düğme
+ * görünmez oluyordu — yalnız beyaz yazısı duruyordu. Ters çevir.
+ */
+button.primary.on-blue,
+a.btn.primary.on-blue {
+  background: #fff;
+  color: var(--blue);
+}
+
 button.ghost,
 a.btn.ghost {
   background: var(--sky-soft);
@@ -1499,6 +1512,10 @@ nav.tabs .tab-badge {
 .quiz-sound {
   font-size: 16px;
   padding: 16px 22px;
+  /* Beyaz kartın içinde (dikte) beyaz düğme kayboluyordu; mavi zeminde
+     (tanıma) beyaz doğruydu. Açık mavi ikisinde de duruyor. */
+  background: var(--sky-soft);
+  color: var(--sky-ink);
 }
 
 .quiz-grid {
@@ -1727,4 +1744,36 @@ nav.tabs .tab-badge {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Yeni sürüm bildirimi — sekme çubuğunun hemen üstünde. */
+.update-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--nav-h) + 10px);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100% - 32px);
+  padding: 10px 10px 10px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+
+.update-bar button {
+  font: inherit;
+  font-weight: 800;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  min-height: 36px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
 }

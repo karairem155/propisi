@@ -173,7 +173,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
             : `${total} yanlış eşleştirme. Karıştırdığın kelimeler daha sık tekrara girecek.`
         }
       </div>
-      <button class="primary" id="go" style="width:100%">${step.label}</button>`;
+      <button class="primary on-blue" id="go" style="width:100%">${step.label}</button>`;
     foot.querySelector('#go')!.addEventListener('click', () => {
       location.hash = nextHash;
     });

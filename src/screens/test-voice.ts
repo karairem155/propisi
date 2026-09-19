@@ -35,7 +35,7 @@ export function render(root: HTMLElement): () => void {
     <h2>Deneme</h2>
     <div class="row">
       <button id="prime" class="ghost">Sesi hazırla (ilk dokunuş)</button>
-      <button id="speak" class="primary">Oku: шиншилла</button>
+      <button id="speak" class="primary on-blue">Oku: шиншилла</button>
       <button id="speakSlow" class="ghost">Yavaş oku (rate 0.7)</button>
       <button id="reload" class="ghost">Listeyi yenile</button>
     </div>
