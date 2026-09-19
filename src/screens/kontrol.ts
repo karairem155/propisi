@@ -21,7 +21,7 @@ import { checkpointLevel, labelOf } from '../data/labels';
 import { cardId, mastery, Rating } from '../srs/cards';
 import { ensureCard, progressBySubject, review } from '../srs/scheduler';
 import { recordReview } from '../srs/stats';
-import { endPlaylist, playlistResults, startPlaylist } from '../srs/session';
+import { endPlaylist, playlistLabels, playlistResults, startPlaylist } from '../srs/session';
 import { mascot } from '../ui/mascot';
 
 /** Geçme eşiği — ortalama. Ders eşiği 0.72; sınav biraz daha yukarıda. */
@@ -216,7 +216,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         tag ? `${tag} sınavı` : 'Sınav',
         exam.steps.map((s) => s.href),
         `#/kontrol-sonuc/${encodeURIComponent(target)}`,
-        { exam: true },
+        { exam: true, labels: exam.steps.map((s) => s.kind) },
       );
       if (first) location.hash = first;
     });
@@ -237,9 +237,14 @@ function isLastCheckpoint(subject: string): boolean {
  * Adımın tam adı — "Şekil" tek başına yetmiyor: elemanlar sınavında üç adımın
  * da türü "Şekil", hangisinin düştüğü belli olmuyordu.
  */
-function stepName(step: ExamStep | undefined, subject: string): string {
-  if (!step) return labelOf(subject).label;
-  return `${step.kind} · ${step.label}`;
+function stepName(kind: string | undefined, subject: string): string {
+  const label = labelOf(subject).label;
+  return kind ? `${kind} · ${label}` : label;
+}
+
+/** `cp-g3` → `g3`, `cp-elements` → `elements`. */
+function levelIdOf(subject: string): string {
+  return subject.startsWith('cp-') ? subject.slice(3) : subject;
 }
 
 // ── Sonuç ekranı ─────────────────────────────────────────────────────────────
@@ -248,6 +253,9 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
   const target = subject ?? 'cp-elements';
   const tag = checkpointLevel(target);
   const results = playlistResults();
+  // Adım türleri liste kurulurken saklanmıştı; sınavı yeniden kurup okumak
+  // yanlış sonuç veriyor (bkz. srs/session.ts → playlistLabels).
+  const kinds = playlistLabels();
   // Not okundu; liste kapanmalı ki sonraki alıştırma normal kuyruğa dönsün.
   endPlaylist();
 
@@ -275,13 +283,10 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
   let disposed = false;
 
   void (async () => {
-    const exam = await buildExam(target);
-    if (disposed) return;
-
     if (passed) {
       // Kart yalnız GEÇİLİNCE ilerletilir. Kalınca reps 0 kalır, patika
       // düğümü 'current' durur ve sınav açık kalmaya devam eder.
-      await ensureCard('checkpoint', target, exam?.levelId ?? 'elements');
+      await ensureCard('checkpoint', target, levelIdOf(target));
       await review(
         cardId('checkpoint', target),
         average >= 0.9 ? Rating.Easy : Rating.Good,
@@ -296,8 +301,8 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
     // ikisi de "три" diye görünüyordu.
     const rows = results
       .map((r, i) => {
-        const step = exam?.steps[i];
-        const info = step ?? labelOf(r.subject);
+        const kind = kinds[i];
+        const info = labelOf(r.subject);
         const color =
           r.score >= PASS_AVERAGE
             ? 'var(--mint)'
@@ -306,9 +311,7 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
               : 'var(--coral)';
         return `<div class="bar-row">
           <span class="bar-name">
-            ${step ? `${step.kind} · ` : ''}<span class="${
-              'cursive' in info ? (info.cursive ? 'cursive' : '') : info.isLetter ? 'cursive' : ''
-            }">${info.label}</span>
+            ${kind ? `${kind} · ` : ''}<span class="${info.isLetter ? 'cursive' : ''}">${info.label}</span>
           </span>
           <div class="bar-track"><i style="width:${pct(r.score)}%;background:${color}"></i></div>
           <b>${pct(r.score)}</b>
@@ -338,7 +341,7 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
               : 'Bir sonraki seviye açıldı. Zayıf kalan adımlar tekrar kuyruğunda.'
             : `Geçmek için ortalama ${Math.round(PASS_AVERAGE * 100)} gerekiyor${
                 worst.score < PASS_FLOOR
-                  ? ` ve <b>${stepName(exam?.steps[worstAt], worst.subject)}</b> adımı
+                  ? ` ve <b>${stepName(kinds[worstAt], worst.subject)}</b> adımı
                      ${Math.round(PASS_FLOOR * 100)} altında kaldı`
                   : ''
               }. Zayıf adımlar tekrar kuyruğuna girdi — çalışıp geri gel.`

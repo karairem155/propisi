@@ -85,6 +85,8 @@ type Playlist = {
    */
   exam: boolean;
   items: string[];
+  /** Adım başına kısa tür adı ("Yazım", "Dikte") — sonuç ekranı için. */
+  labels: string[];
   index: number;
   /** Liste bitince gidilecek yer — sonuç ekranı. */
   finishHref: string;
@@ -98,13 +100,14 @@ export function startPlaylist(
   name: string,
   items: string[],
   finishHref: string,
-  opts: { exam?: boolean } = {},
+  opts: { exam?: boolean; labels?: string[] } = {},
 ): string | null {
   if (!items.length) return null;
   playlist = {
     name,
     exam: opts.exam ?? false,
     items,
+    labels: opts.labels ?? [],
     index: 0,
     finishHref,
     entryMark: session.entries.length,
@@ -141,6 +144,18 @@ export function playlistProgress(): {
     total: playlist.items.length,
     finishHref: playlist.finishHref,
   };
+}
+
+/**
+ * Adım türleri, liste KURULDUĞU andaki hâliyle.
+ *
+ * NEDEN SAKLANIYOR: sonuç ekranı sınavı yeniden kurup adım adlarını oradan
+ * okuyordu. Ama sınavın kendisi kartları ilerlettiği için ustalık sıralaması
+ * değişiyor ve ikinci kurulum BAŞKA harfler seçiyordu — kullanıcı `и` yazmışken
+ * sonuçta "Yazım · п" görüyordu.
+ */
+export function playlistLabels(): string[] {
+  return playlist?.labels ?? [];
 }
 
 /** Sınav sırasında toplanan sonuçlar — sonuç ekranı notu buradan hesaplar. */
