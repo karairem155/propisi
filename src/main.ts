@@ -68,6 +68,12 @@ const prefixRoutes: Route[] = [
     prefix: '/calis/',
     load: async () => (await import('./screens/calisma')).render,
   },
+  {
+    title: 'Tanıma',
+    tab: 'path',
+    prefix: '/tani/',
+    load: async () => (await import('./screens/tani')).render,
+  },
 ];
 
 const app = document.querySelector<HTMLElement>('#app')!;

@@ -36,7 +36,7 @@ import {
   type ElementBox,
 } from '../ui/elements';
 import { scoreShape, shapeMessage, type ShapeResult } from '../grading/shape';
-import { ensureCard, review, buildQueue } from '../srs/scheduler';
+import { ensureCard, review, buildQueue, practiceHref } from '../srs/scheduler';
 import { Rating } from '../srs/cards';
 import { getSetting, saveAttempt } from '../db/db';
 import { recordReview } from '../srs/stats';
@@ -473,6 +473,12 @@ export function render(root: HTMLElement, subject?: string): () => void {
       },
     });
 
+    // Yazmayı bitiren harf için TANIMA kartı açılır: yazabilmek tanıyabilmek
+    // demek değil (brief 6.1 — лш ile ми görsel olarak ayırt edilemez).
+    if (kindOf(target) === 'letter') {
+      await ensureCard('letter:read', target, levelOfLetter(target)?.id ?? 'g1');
+    }
+
     const queue = await buildQueue();
     if (disposed) return;
     const seen = seenSubjects();
@@ -486,7 +492,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
     );
 
     if (next) {
-      nextHash = `#/calis/${encodeURIComponent(next.subject)}`;
+      nextHash = practiceHref(next);
       checkBtn.textContent = `Sonraki ders · ${queue.total}`;
     } else {
       nextHash = '#/ozet';

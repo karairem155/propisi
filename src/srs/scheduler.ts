@@ -82,7 +82,21 @@ export async function review(
  *
  * Ekranları geldikçe buraya eklenecek.
  */
-const PRACTICABLE: CardKind[] = ['letter:write', 'element:write', 'word:write'];
+const PRACTICABLE: CardKind[] = [
+  'letter:write',
+  'element:write',
+  'word:write',
+  'letter:read',
+];
+
+/**
+ * Kartı açan ekranın adresi. Kuyruk artık tek tip değil — yazma kartı
+ * çalışma ekranını, tanıma kartı tanıma ekranını açıyor.
+ */
+export function practiceHref(card: SrsCard): string {
+  const sub = encodeURIComponent(card.subject);
+  return card.kind === 'letter:read' ? `#/tani/${sub}` : `#/calis/${sub}`;
+}
 
 export function isPracticable(card: SrsCard): boolean {
   return PRACTICABLE.includes(card.kind);

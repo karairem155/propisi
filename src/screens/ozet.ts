@@ -6,7 +6,7 @@
 // değil buraya konuyor.
 
 import { currentSession, summarize } from '../srs/session';
-import { buildQueue } from '../srs/scheduler';
+import { buildQueue, practiceHref } from '../srs/scheduler';
 import { statsView } from '../srs/stats';
 import { CHECK_LABELS } from './tekrar';
 import { art } from '../ui/assets';
@@ -99,15 +99,13 @@ export function render(root: HTMLElement): () => void {
     if (stat) stat.textContent = `🔥 ${stats.streak}`;
 
     // Kuyrukta hâlâ kart varsa devam etme yolu sun.
-    if (queue.total > 0) {
-      const first = queue.cards[0]?.subject;
-      if (first) {
-        root.querySelector('.row')!.insertAdjacentHTML(
-          'afterbegin',
-          `<a class="btn ghost" href="#/calis/${encodeURIComponent(first)}"
-             style="flex:1;text-align:center;text-decoration:none">Devam et · ${queue.total}</a>`,
-        );
-      }
+    const firstCard = queue.cards[0];
+    if (firstCard) {
+      root.querySelector('.row')!.insertAdjacentHTML(
+        'afterbegin',
+        `<a class="btn ghost" href="${practiceHref(firstCard)}"
+           style="flex:1;text-align:center;text-decoration:none">Devam et · ${queue.total}</a>`,
+      );
     }
   })();
 

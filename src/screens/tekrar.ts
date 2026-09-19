@@ -12,7 +12,7 @@
 // Kuyruk boşken 2. blok sayfanın merkezine geçer: "Bugünlük tamam ✓" tek başına
 // ölü ekran, orada "şunları pekiştir" demek çok daha iyi.
 
-import { buildQueue, allCards, type Queue } from '../srs/scheduler';
+import { buildQueue, allCards, practiceHref, type Queue } from '../srs/scheduler';
 import { ELEMENTS, LEVELS } from '../data/curriculum';
 import { getSetting } from '../db/db';
 import { statsView, type StatsView } from '../srs/stats';
@@ -75,7 +75,8 @@ export function render(root: HTMLElement): () => void {
     if (disposed) return;
 
     const weak = weakSpots(cards);
-    const first = queue.cards[0]?.subject;
+    const firstCard = queue.cards[0];
+    const first = firstCard ? practiceHref(firstCard) : undefined;
     root.innerHTML =
       (queue.total ? queueCard(queue, first) : emptyCard()) +
       weakCard(weak, queue.total === 0) +
@@ -105,7 +106,7 @@ function queueCard(queue: Queue, first?: string): string {
       ${
         first
           ? `<a class="btn primary" style="display:block;width:100%;text-align:center;text-decoration:none"
-               href="#/calis/${encodeURIComponent(first)}">Tekrara başla · ${queue.total}</a>`
+               href="${first}">Tekrara başla · ${queue.total}</a>`
           : '<button class="primary" style="width:100%" disabled>Tekrara başla</button>'
       }
       <p class="fine">Şu an şekil örtüşmesine bakılıyor; yön ve hamle sırası glyph verisiyle gelecek.</p>
