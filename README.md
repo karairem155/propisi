@@ -23,10 +23,23 @@ ilerlet → sıradaki kart → oturum özeti.
 | **Harf avı** | kelimede harfi işaretle | ambiguity eğitimi |
 | **Dikte** | duy → yaz, kılavuzsuz | konumdan bağımsız değerlendirme |
 | **Eşleştirme** | el yazısı ↔ anlam, dördü birden | toplu karışma |
+| **Kontrol noktası** | seviye sınavı, 6 adım | kılavuzsuz, tek deneme |
 
 Ders zinciri kendiliğinden açılıyor — harf: **yaz → tanı → av**,
 kelime: **yaz → dikte → eşleştir**. Hepsi ayrı FSRS kartı, hepsi aynı karışık
 kuyrukta (brief 7.0: "tek tip tekrar sıkıcıdır ve transfer sağlamaz").
+
+### Kontrol noktası
+
+Her seviyenin sonunda bir sınav var ve **sonraki seviye onsuz açılmıyor**.
+Sınav kendi soru tiplerini yazmıyor: yukarıdaki ekranları sırayla çalıştırıyor
+(`srs/session.ts` → sınav listesi, `srs/flow.ts` → sıradaki adım). Ayrı bir
+soru tipi icat etmek "çalıştığından başka bir şeyden sınav olmak" olurdu, ve
+ikinci bir değerlendirme yolu ikinci bir hata kaynağı demekti.
+
+Dersten farkı çalışma ekranının davranışında: sınavda yedi denemelik dizi
+yerine **tek, kılavuzsuz deneme**. Geçmek için ortalama ≥ 75 ve hiçbir adımda
+50 altına düşmemek gerekiyor. Ayrıntı: `docs/ekranlar.md`.
 
 ### Değerlendirme
 
@@ -75,14 +88,17 @@ davranışını gerçekten test etmek için dağıtılmış sürümü kullan.
 
 ---
 
-## Dağıtım (Cloudflare Pages)
+## Dağıtım (GitHub Pages)
 
-```bash
-npm run deploy
-```
+`main`'e push yeter — `.github/workflows/pages.yml` derleyip yayınlıyor.
+Elle bir adım yok.
 
-İlk seferde `wrangler login` gerekir. Netlify kullanma: ücretsiz planı kredi bazlı,
-kredi bitince site kapanıyor (brief 10).
+Deponun **Settings → Pages → Source** ayarı **GitHub Actions** olmalı; bu tek
+seferlik ve depo sahibinin yapması gerekiyor.
+
+`vite.config.ts` içinde `base: './'` olduğu için alt yolda (`/propisi/`)
+sorunsuz çalışıyor. Netlify kullanma: ücretsiz planı kredi bazlı, kredi bitince
+site kapanıyor (brief 10).
 
 Service worker'ın `SHELL` listesi ve `VERSION`'u **otomatik üretiliyor**
 (`tools/gen-sw-shell.mjs`, `postbuild` adımında). Elle güncellemeye gerek yok:
@@ -138,9 +154,10 @@ tutucu çizilir, istek atılmaz. Görsel geldiğinde yapılacak tek şey:
 
 Başka hiçbir yer değişmez.
 
-**Not:** alıştırma ekranları (çizim, dikte, eşleştirme) henüz yok — harf çizim verisi
-Faz 1'de üretiliyor. O gelene kadar `Profil → Geliştirici → Örnek kart üret` ile
-sistemi gerçek veriyle görebilirsin.
+**Sınav listesi** (`srs/session.ts`) alıştırma ekranlarını zincirler. İki
+kullanıcısı var ve ikisi zıt davranır: kontrol noktası (sınav — tek kılavuzsuz
+deneme) ve Tekrar ekranındaki "Bunları çalış" (çalışma — tam ders). Sıradaki
+adımı seçen tek yer `srs/flow.ts` → `nextAfter`.
 
 ---
 
@@ -193,14 +210,17 @@ ama satır yapısı korunuyor.
 
 ```
 src/
-  data/      curriculum.ts (müfredat) · starts.ts (başlangıç noktaları) · confusables.ts
-  srs/       cards.ts · scheduler.ts (ts-fsrs, kuyruk) · session.ts · stats.ts
+  data/      curriculum.ts (müfredat) · starts.ts (başlangıç noktaları)
+             confusables.ts · labels.ts (kimlik → okunur ad)
+  srs/       cards.ts · scheduler.ts (ts-fsrs, kuyruk) · session.ts (oturum +
+             sınav listesi) · flow.ts (sıradaki adım) · stats.ts
   canvas/    pointer.ts (Pencil girişi) · ink.ts (perfect-freehand) · surface.ts (3 katman)
   ui/        paper.ts · mascot.ts (kadro) · assets.ts (görsel yuvaları) · style.css · fonts/
   db/        db.ts (IndexedDB v2: attempts · settings · cards) · export.ts (JSON yedek)
   grading/   shape.ts (örtüşme + bant kapsaması) · decimate.ts
   screens/   tekrar · patika · alfabe · ilerleme · profil · ozet
              calisma (element/harf/bağlantı/kelime) · tani · av · dikte · eslestir
+             kontrol (seviye sınavı + sonuç)
              + sandbox · test-voice · test-latency · test-scribble · records
   dev/       mascots.ts (kadro galerisi) · baslangic.ts (başlangıç noktası kontrolü)
 tools/

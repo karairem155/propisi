@@ -67,3 +67,88 @@ export function summarize(): SessionSummary {
 export function seenSubjects(): Set<string> {
   return new Set(session.entries.map((x) => x.subject));
 }
+
+// ── Sınav listesi ────────────────────────────────────────────────────────────
+//
+// Kontrol noktası, mevcut alıştırma ekranlarını SIRAYLA çalıştırır. Kendi soru
+// tiplerini yazmıyor — sınav, o seviyede öğrenilenin aynısını karışık sırayla
+// ister. Sıradaki adımı kuyruk değil bu liste belirler (srs/flow.ts).
+
+type Playlist = {
+  name: string;
+  /**
+   * Sınav listesi mi yoksa çalışma serisi mi.
+   *
+   * İkisi de aynı zincirleme mekanizmasını kullanıyor ama çalışma ekranında
+   * ZIT davranıyorlar: sınavda tek kılavuzsuz deneme, çalışmada yedi
+   * denemelik tam ders. Tek bir "liste açık mı" bayrağı bu ikisini karıştırır.
+   */
+  exam: boolean;
+  items: string[];
+  index: number;
+  /** Liste bitince gidilecek yer — sonuç ekranı. */
+  finishHref: string;
+  /** Liste başlarken oturumda kaç sonuç vardı; not bunun sonrasından hesaplanır. */
+  entryMark: number;
+};
+
+let playlist: Playlist | null = null;
+
+export function startPlaylist(
+  name: string,
+  items: string[],
+  finishHref: string,
+  opts: { exam?: boolean } = {},
+): string | null {
+  if (!items.length) return null;
+  playlist = {
+    name,
+    exam: opts.exam ?? false,
+    items,
+    index: 0,
+    finishHref,
+    entryMark: session.entries.length,
+  };
+  return items[0]!;
+}
+
+export function playlistActive(): boolean {
+  return playlist !== null;
+}
+
+/** Çalışma ekranı buna bakıp ders ile sınav arasında seçim yapıyor. */
+export function examActive(): boolean {
+  return playlist?.exam === true;
+}
+
+/** Sıradaki adıma geç. Liste bittiyse `null` — çağıran bitiş adresine gider. */
+export function advancePlaylist(): string | null {
+  if (!playlist) return null;
+  playlist.index++;
+  return playlist.items[playlist.index] ?? null;
+}
+
+export function playlistProgress(): {
+  name: string;
+  index: number;
+  total: number;
+  finishHref: string;
+} {
+  if (!playlist) return { name: '', index: 0, total: 0, finishHref: '#/ozet' };
+  return {
+    name: playlist.name,
+    index: playlist.index,
+    total: playlist.items.length,
+    finishHref: playlist.finishHref,
+  };
+}
+
+/** Sınav sırasında toplanan sonuçlar — sonuç ekranı notu buradan hesaplar. */
+export function playlistResults(): SessionEntry[] {
+  if (!playlist) return [];
+  return session.entries.slice(playlist.entryMark);
+}
+
+export function endPlaylist(): void {
+  playlist = null;
+}

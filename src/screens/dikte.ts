@@ -16,10 +16,11 @@ import { outlinePath, styleFor } from '../canvas/ink';
 import { drawPaper, DEFAULT_PAPER, type PaperConfig } from '../ui/paper';
 import { drawGuide, ensureGuideFont, measureGuide, targetPainter, type GuideBox } from '../ui/guide';
 import { scoreShape, shapeMessage } from '../grading/shape';
-import { ensureCard, review, buildQueue, practiceHref } from '../srs/scheduler';
+import { ensureCard, review } from '../srs/scheduler';
+import { nextAfter } from '../srs/flow';
 import { Rating } from '../srs/cards';
 import { recordReview } from '../srs/stats';
-import { pushResult, seenSubjects } from '../srs/session';
+import { pushResult } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
 import { getSetting, saveAttempt } from '../db/db';
 import { findWord } from '../data/curriculum';
@@ -265,12 +266,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
       },
     });
 
-    const queue = await buildQueue();
+    const step = await nextAfter(target);
     if (disposed) return;
-    const seen = seenSubjects();
-    const next = queue.cards.find((c) => c.subject !== target && !seen.has(c.subject));
-    nextHash = next ? practiceHref(next) : '#/ozet';
-    checkBtn.textContent = next ? `Devam · ${queue.total}` : 'Oturumu bitir';
+    nextHash = step.href;
+    checkBtn.textContent = step.label;
   }
 
   void (async () => {

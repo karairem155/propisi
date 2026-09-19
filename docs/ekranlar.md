@@ -135,7 +135,39 @@ Harf sırası brief 11.1'deki gruplama; grup içi sıra Тихомиров müfr
 | Harf dersi | Harfin el yazısı hâli | Üç kademeli çizim |
 | Bağlantı dersi | Harf çifti, el yazısı | Bağlantı ekranı |
 | Kelime dersi | Kelime, el yazısı | Kelime ekranı |
-| Kontrol noktası | Hedef tahtası + maskot | Karışık sınav |
+| Kontrol noktası | Hedef tahtası + maskot | Karışık sınav (`#/kontrol/cp-<seviye>`) |
+
+### Kontrol noktası — nasıl çalışıyor
+
+Sınav **kendi soru tiplerini yazmıyor**; mevcut alıştırma ekranlarını sırayla
+çalıştırıyor (`srs/session.ts` → sınav listesi, `srs/flow.ts` → sıradaki adım).
+İki gerekçe:
+
+- Sınav, öğrenilenin aynısını istemeli. Ayrı bir soru tipi icat etmek
+  "çalıştığın şeyden başka bir şeyden sınav olmak" demektir.
+- İkinci bir değerlendirme yolu ikinci bir hata kaynağıdır. Puanlama tek yerde
+  kalsın (`grading/shape.ts`).
+
+Altı adım, dört ayrı beceri: **yazım · tanıma · bağlantı · harf avı · dikte ·
+eşleştirme**. Konular o seviyenin kendi malzemesinden, en zayıf olan önce
+(ustalık = FSRS stability, `cards.ts` → `mastery`).
+
+Dersten tek farkı çalışma ekranının davranışı: sınav listesi açıkken yedi
+denemelik dizi yerine **tek, kılavuzsuz deneme** açılıyor
+(`calisma.ts` → `EXAM_LESSON`). Ders öğretir, sınav ölçer.
+
+| | Geçme koşulu |
+|---|---|
+| Ortalama | ≥ 75 |
+| En düşük adım | ≥ 50 |
+
+Geçilince `checkpoint:cp-<seviye>` kartı ilerletilir; patika sıralı açıldığı
+için **sonraki seviye böyle açılıyor**. Kalınca kart ilerletilmez, düğüm
+`current` kalır, sınav açık kalır.
+
+Kontrol noktası düğümü **solmaz**: geçilen sınavın FSRS vadesi dakikalar içinde
+dolduğu için düğüm hemen kehribara dönüyordu — "geçtin" dedikten sonra
+"borçlusun" demek. Sınavın kapsadığı harflerin kendi kartları zaten kuyrukta.
 
 **Düğüm durumları** — bu sözlük her yerde aynı kullanılır:
 

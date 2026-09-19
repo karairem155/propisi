@@ -1606,3 +1606,97 @@ nav.tabs .tab-badge {
 .match-item:disabled {
   opacity: 0.75;
 }
+
+/* ── Kontrol noktası (sınav) ─────────────────────────────────────────────── */
+
+.exam-hero {
+  text-align: center;
+  padding: 6px 0 18px;
+}
+
+/* .mascot display:block — ortalamak için kendi payı gerekiyor. */
+.exam-hero .mascot {
+  margin: 0 auto;
+}
+
+.exam-hero b {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.exam-hero h2 {
+  margin: 2px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.exam-score {
+  margin-top: 10px;
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+}
+
+.exam-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.exam-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-radius: var(--r-md);
+  padding: 11px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.exam-no {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sky-soft);
+  color: var(--sky-ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.exam-txt {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+
+.exam-txt b {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* Kısa konular el yazısıyla, uzun listeler normal metinle. */
+.exam-txt .cursive {
+  font-size: 21px;
+  line-height: 1;
+  color: var(--sky-ink);
+}
+
+.exam-txt .fine {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

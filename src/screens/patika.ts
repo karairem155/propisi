@@ -56,6 +56,26 @@ export function render(root: HTMLElement): () => void {
       return { state: 'locked' };
     };
 
+    /**
+     * Seviye sonu sınavı — durumu kendi konusundan (`cp-g3`) okunur.
+     *
+     * Kontrol noktası SOLMAZ. Geçilen sınavın FSRS vadesi birkaç dakika sonra
+     * dolduğu için düğüm hemen kehribara dönüyordu: "geçtin" dedikten sonra
+     * "borçlusun" demek. Sınavın kapsadığı harflerin kendi kartları zaten
+     * kuyrukta; tekrar çözmek borç değil, tercih.
+     */
+    const cpNode = (subject: string, sub: string): PathNode => {
+      const s = stateOf(subject);
+      return {
+        kind: 'checkpoint',
+        subject,
+        art: '',
+        label: 'Kontrol noktası',
+        sub,
+        state: s.state === 'fading' ? 'done' : s.state,
+      };
+    };
+
     const sections: { tag: string; name: string; nodes: PathNode[] }[] = [
       {
         tag: 'Seviye 0',
@@ -72,7 +92,7 @@ export function render(root: HTMLElement): () => void {
               ...s,
             };
           }),
-          checkpoint(stateOf('cp-elements'), 'Kontrol noktası', 'karışık sınav'),
+          cpNode('cp-elements', 'karışık sınav'),
         ],
       },
       ...LEVELS.map((level) => ({
@@ -118,7 +138,7 @@ export function render(root: HTMLElement): () => void {
                 },
               ]
             : []),
-          checkpoint(stateOf(`cp-${level.id}`), 'Kontrol noktası', 'grup sınavı'),
+          cpNode(`cp-${level.id}`, 'grup sınavı'),
         ],
       })),
     ];
@@ -174,9 +194,9 @@ export function render(root: HTMLElement): () => void {
       ${
         seen === 0
           ? `<div class="note" style="margin-bottom:14px">
-               Henüz hiçbir ders açılmadı, bu yüzden her şey kilitli — doğru davranış.
-               İlk düğüm <b>current</b> olarak işaretli. Örnek ilerleme görmek için
-               <b>Profil → Geliştirici → Örnek kart üret</b>.
+               Patika sırayla açılır: bir ders bitmeden sonraki açılmıyor.
+               İşaretli ilk düğümden başla — her seviyenin sonunda bir
+               <b>kontrol noktası</b> var, onu geçmeden sonraki seviye açılmaz.
              </div>`
           : ''
       }
@@ -208,14 +228,6 @@ export function render(root: HTMLElement): () => void {
   };
 }
 
-function checkpoint(
-  s: { state: NodeState; due?: number },
-  label: string,
-  sub: string,
-): PathNode {
-  return { kind: 'checkpoint', art: '', label, sub, ...s };
-}
-
 /** Yolun yanlara salınımı — ölçüm gerektirmesin diye sinüsle hesaplanıyor. */
 function offset(index: number): number {
   return Math.round(Math.sin((index * Math.PI) / 3) * AMP);
@@ -243,11 +255,15 @@ function row(node: PathNode, x: number): string {
   const body = `<div class="${cls.join(' ')}">${nodeArt(node)}${flag}</div>
     <div class="node-label">${node.label}${node.sub ? `<small>${node.sub}</small>` : ''}</div>`;
 
-  // Kilitli düğüm ve kontrol noktası henüz açılmıyor.
-  const open = node.state !== 'locked' && node.subject && node.kind !== 'checkpoint';
+  // Kilitli düğüm açılmaz. Kontrol noktası kendi sınav ekranına gider.
+  const open = node.state !== 'locked' && Boolean(node.subject);
+  const href =
+    node.kind === 'checkpoint'
+      ? `#/kontrol/${encodeURIComponent(node.subject!)}`
+      : `#/calis/${encodeURIComponent(node.subject!)}`;
 
   return `<div class="path-row path-row--${node.state}" style="transform:translateX(${x}px)">
-    ${open ? `<a class="path-open" href="#/calis/${encodeURIComponent(node.subject!)}">${body}</a>` : body}
+    ${open ? `<a class="path-open" href="${href}">${body}</a>` : body}
   </div>`;
 }
 

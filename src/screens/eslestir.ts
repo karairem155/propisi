@@ -9,10 +9,11 @@
 // diğerleri etkilenmiyor.
 
 import { findWord, LEVELS, type WordItem } from '../data/curriculum';
-import { ensureCard, review, buildQueue, practiceHref } from '../srs/scheduler';
+import { ensureCard, review } from '../srs/scheduler';
+import { nextAfter } from '../srs/flow';
 import { Rating } from '../srs/cards';
 import { recordReview } from '../srs/stats';
-import { pushResult, seenSubjects } from '../srs/session';
+import { pushResult } from '../srs/session';
 import { ensureGuideFont } from '../ui/guide';
 
 type Pair = { word: WordItem; done: boolean };
@@ -160,11 +161,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
     const score = pairs.length / (pairs.length + total);
     pushResult({ subject: target, label: 'Eşleştirme', score, checks: [], at: Date.now() });
 
-    const queue = await buildQueue();
+    const step = await nextAfter(target);
     if (disposed) return;
-    const seen = seenSubjects();
-    const next = queue.cards.find((c) => c.subject !== target && !seen.has(c.subject));
-    nextHash = next ? practiceHref(next) : '#/ozet';
+    nextHash = step.href;
 
     foot.innerHTML = `
       <div class="${total === 0 ? 'ok' : 'warn'}" style="margin-top:14px">
@@ -174,9 +173,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
             : `${total} yanlış eşleştirme. Karıştırdığın kelimeler daha sık tekrara girecek.`
         }
       </div>
-      <button class="primary" id="go" style="width:100%">
-        ${next ? `Devam · ${queue.total}` : 'Oturumu bitir'}
-      </button>`;
+      <button class="primary" id="go" style="width:100%">${step.label}</button>`;
     foot.querySelector('#go')!.addEventListener('click', () => {
       location.hash = nextHash;
     });

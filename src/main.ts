@@ -92,6 +92,18 @@ const prefixRoutes: Route[] = [
     prefix: '/eslestir/',
     load: async () => (await import('./screens/eslestir')).render,
   },
+  {
+    title: 'Kontrol noktası',
+    tab: 'path',
+    prefix: '/kontrol/',
+    load: async () => (await import('./screens/kontrol')).render,
+  },
+  {
+    title: 'Sınav sonucu',
+    tab: 'path',
+    prefix: '/kontrol-sonuc/',
+    load: async () => (await import('./screens/kontrol')).renderResult,
+  },
 ];
 
 const app = document.querySelector<HTMLElement>('#app')!;
@@ -169,6 +181,11 @@ async function route(): Promise<void> {
     markTab('home');
     return;
   }
+
+  // Parametresiz rota = hub ekranı (Tekrar, Patika, Profil...). Oraya dönmek
+  // yarım kalan sınavı bırakmak demektir; liste kapanmazsa sonraki alıştırmanın
+  // "sıradaki" düğmesini ele geçirir. Sınav adımlarının hepsi parametreli.
+  if (!param) (await import('./srs/session')).endPlaylist();
 
   // Parametre ham kimlik olabiliyor (el-kryuchok); okunur adı ekranın kendisi
   // gösteriyor, üst başlığa basmıyoruz.

@@ -15,7 +15,8 @@ export type CardKind =
   | 'join' // Harf çiftini yaz
   | 'word:write' // Anlam/ses verilir, el yazısıyla yaz
   | 'word:read' // El yazısı gösterilir, anlamı?
-  | 'word:dictation'; // Duy → yaz
+  | 'word:dictation' // Duy → yaz
+  | 'checkpoint'; // Seviye sınavı — patika kilidini açan düğüm
 
 export type CardId = string; // 'letter:а:write' | 'join:ол' | 'word:мама:dictation'
 

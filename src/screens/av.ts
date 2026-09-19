@@ -10,10 +10,11 @@
 
 import { CONFUSABLES } from '../data/confusables';
 import { HARD_WORDS, LEVELS, levelOfLetter } from '../data/curriculum';
-import { ensureCard, review, buildQueue, practiceHref } from '../srs/scheduler';
+import { ensureCard, review } from '../srs/scheduler';
+import { nextAfter } from '../srs/flow';
 import { Rating } from '../srs/cards';
 import { recordReview } from '../srs/stats';
-import { pushResult, seenSubjects } from '../srs/session';
+import { pushResult } from '../srs/session';
 import { ensureGuideFont } from '../ui/guide';
 
 const FAMILY = "'Bad Script', cursive";
@@ -228,11 +229,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
     await recordReview();
     pushResult({ subject: target, label: target, score, checks: [], at: Date.now() });
 
-    const queue = await buildQueue();
+    const step = await nextAfter(target);
     if (disposed) return;
-    const seen = seenSubjects();
-    const next = queue.cards.find((c) => c.subject !== target && !seen.has(c.subject));
-    nextHash = next ? practiceHref(next) : '#/ozet';
+    nextHash = step.href;
 
     huntBox.innerHTML = `
       <div class="card" style="text-align:center">
@@ -245,9 +244,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
               : 'Karıştırdığın yerler tekrar kuyruğuna girdi.'
           }
         </p>
-        <button class="primary" id="go" style="width:100%">
-          ${next ? `Devam · ${queue.total}` : 'Oturumu bitir'}
-        </button>
+        <button class="primary" id="go" style="width:100%">${step.label}</button>
       </div>`;
     huntBox.querySelector('#go')!.addEventListener('click', () => {
       location.hash = nextHash;

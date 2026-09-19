@@ -12,11 +12,18 @@
 // Kuyruk boşken 2. blok sayfanın merkezine geçer: "Bugünlük tamam ✓" tek başına
 // ölü ekran, orada "şunları pekiştir" demek çok daha iyi.
 
-import { buildQueue, allCards, practiceHref, type Queue } from '../srs/scheduler';
-import { ELEMENTS, LEVELS } from '../data/curriculum';
+import {
+  buildQueue,
+  allCards,
+  isPracticable,
+  practiceHref,
+  type Queue,
+} from '../srs/scheduler';
+import type { SrsCard } from '../srs/cards';
+import { labelOf } from '../data/labels';
 import { getSetting } from '../db/db';
 import { statsView, type StatsView } from '../srs/stats';
-import { startSession } from '../srs/session';
+import { startPlaylist, startSession } from '../srs/session';
 import { art } from '../ui/assets';
 import { mascot } from '../ui/mascot';
 
@@ -40,24 +47,6 @@ export const CHECK_LABELS: Record<string, string> = {
 
 type Weak = { subject: string; label: string; isLetter: boolean; total: number; top: string };
 
-/**
- * Konu kimliğini okunur etikete çevirir. Element kartlarının konusu `el-oval`
- * gibi bir kimlik — onu ham hâliyle el yazısı fontuyla basmak kırık görünüyordu.
- */
-function labelOf(subject: string): { label: string; isLetter: boolean } {
-  if (subject.length === 1) return { label: subject, isLetter: true };
-  const el = ELEMENTS.find((e) => e.id === subject);
-  if (el) return { label: el.name, isLetter: false };
-  const lvl = LEVELS.find((l) => `joins-${l.id}` === subject || `words-${l.id}` === subject);
-  if (lvl) {
-    return {
-      label: subject.startsWith('joins') ? `${lvl.ru} bağlantıları` : `${lvl.ru} kelimeleri`,
-      isLetter: false,
-    };
-  }
-  return { label: subject, isLetter: subject.length <= 3 };
-}
-
 export function render(root: HTMLElement): () => void {
   root.className = 'screen';
   // Tekrar sayfasına her dönüşte oturum sıfırlanır — özet "bu seri" demek.
@@ -79,9 +68,20 @@ export function render(root: HTMLElement): () => void {
     const firstCard = queue.cards[0];
     const first = firstCard ? practiceHref(firstCard) : undefined;
     root.innerHTML =
-      (queue.total ? queueCard(queue, first) : emptyCard()) +
+      (queue.total ? queueCard(queue, first) : emptyCard(cards.length > 0)) +
       weakCard(weak, queue.total === 0) +
       footerCard(goal, stats);
+
+    // "Bunları çalış" — zayıf konuları vadesine bakmadan arka arkaya açar.
+    // Kuyruk vadesi gelenleri verir; bu düğme "bugün sırası olmasa da şunları
+    // pekiştir" demek. Sınav değil, tam ders açılıyor (session.ts → exam).
+    root.querySelector('#studyWeak')?.addEventListener('click', () => {
+      const items = weak
+        .map((w) => hrefForSubject(w.subject, cards))
+        .filter((h): h is string => h !== null);
+      const firstWeak = startPlaylist('Zayıf noktalar', items, '#/ozet');
+      if (firstWeak) location.hash = firstWeak;
+    });
   })();
 
   return () => {
@@ -114,12 +114,34 @@ function queueCard(queue: Queue, first?: string): string {
     </div>`;
 }
 
-function emptyCard(): string {
+/**
+  * Kuyruk boş — ama iki farklı sebeple boş olabilir ve ikisi zıt şey söyler:
+  * hiç başlamamışa "bugünlük tamam ✓" demek yanlış yönlendirmedir.
+  */
+function emptyCard(everStarted: boolean): string {
+  if (!everStarted) {
+    return `
+      <div class="queue-card" style="text-align:center">
+        ${mascot('cubuk', { size: 92, mood: 'open' })}
+        <h3 style="margin-top:12px">Hoş geldin</h3>
+        <p class="fine">
+          Tekrar kuyruğu ders açtıkça dolar. İlk ders <b>elemanlar</b> —
+          harfler bu şekillerden kuruluyor.
+        </p>
+        <a class="btn primary" style="display:block;width:100%;text-align:center;text-decoration:none"
+           href="#/calis/el-naklon">İlk derse başla</a>
+        <p class="fine" style="margin-bottom:0">
+          Bütün müfredat <a href="#/patika">Patika</a>'da.
+        </p>
+      </div>`;
+  }
   return `
     <div class="queue-card" style="text-align:center">
       ${art('today-empty', { width: '150px', className: 'art-center' })}
       <h3 style="margin-top:12px">Bugünlük tamam ✓</h3>
-      <p class="fine" style="margin-bottom:0">Vadesi gelen kart yok.</p>
+      <p class="fine">Vadesi gelen kart yok.</p>
+      <a class="btn ghost" style="display:block;width:100%;text-align:center;text-decoration:none"
+         href="#/patika">Patikadan yeni ders aç</a>
     </div>`;
 }
 
@@ -133,7 +155,8 @@ function weakCard(weak: Weak[], focus: boolean): string {
       <div class="card">
         <b style="font-size:15px">Zorlandıkların</b>
         <div class="empty-hint" style="padding:12px 0 4px">
-          Henüz hata verisi yok. Çizim değerlendirmesi Faz 1'de açılıyor (brief 6.2).
+          Henüz hata verisi yok — birkaç ders sonra burada hangi harfte
+          zorlandığın çıkacak.
         </div>
       </div>`;
   }
@@ -157,7 +180,7 @@ function weakCard(weak: Weak[], focus: boolean): string {
           )
           .join('')}
       </div>
-      <button class="ghost" style="width:100%;margin-top:12px" disabled>Bunları çalış</button>
+      <button class="ghost" style="width:100%;margin-top:12px" id="studyWeak">Bunları çalış</button>
       <a href="#/ilerleme" class="card-link">Tüm tekrarları gör ›</a>
     </div>`;
 }
@@ -191,10 +214,18 @@ function footerCard(goal: number, stats: StatsView): string {
     <div class="card" style="display:flex;align-items:center;gap:14px">
       <span class="badge">${mascot('oval', { size: 40, mood: 'sleep' })}</span>
       <span class="fine">
-        Sistem hazır: müfredat, FSRS ve görsel yuvaları kurulu.
-        Eksik olan tek şey harf çizim verisi.
+        Değerlendirme şekil örtüşmesine bakıyor. Yön ve hamle sırası
+        henüz ölçülmüyor — onlar harf çizim verisiyle gelecek.
       </span>
     </div>`;
+}
+
+/** Konunun en uygun alıştırma adresi — en gecikmiş kartı hangisiyse o. */
+function hrefForSubject(subject: string, cards: SrsCard[]): string | null {
+  const own = cards
+    .filter((c) => c.subject === subject && isPracticable(c))
+    .sort((a, b) => a.fsrs.due.getTime() - b.fsrs.due.getTime());
+  return own[0] ? practiceHref(own[0]) : null;
 }
 
 /** Hata sayaçlarından en çok zorlanılan 5 konu. */

@@ -36,11 +36,12 @@ import {
   type ElementBox,
 } from '../ui/elements';
 import { scoreShape, shapeMessage, type ShapeResult } from '../grading/shape';
-import { ensureCard, review, buildQueue, practiceHref } from '../srs/scheduler';
+import { ensureCard, review } from '../srs/scheduler';
+import { nextAfter } from '../srs/flow';
 import { Rating } from '../srs/cards';
 import { getSetting, saveAttempt } from '../db/db';
 import { recordReview } from '../srs/stats';
-import { pushResult, seenSubjects } from '../srs/session';
+import { pushResult, examActive } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
 import { ELEMENTS, LEVELS, findJoin, findWord, levelOfLetter } from '../data/curriculum';
@@ -51,12 +52,21 @@ const PASS = 0.72;
 
 type Step = { stage: 1 | 2 | 3; need: number; label: string; alpha: number };
 
-const LESSON: Step[] = [
+const FULL_LESSON: Step[] = [
   { stage: 1, need: 3, label: 'Kılavuzun üstünden geç', alpha: 0.3 },
   { stage: 2, need: 2, label: 'Kılavuz soluyor', alpha: 0.13 },
   { stage: 3, need: 2, label: 'Kılavuz yok — ezberden yaz', alpha: 0 },
 ];
-const TOTAL = LESSON.reduce((n, s) => n + s.need, 0);
+
+/**
+ * Sınav dizisi — kontrol noktasında kullanılır.
+ *
+ * Yedi denemelik tam ders sınavda yanlış olur: ders ÖĞRETİR, sınav ÖLÇER.
+ * Tek deneme, kılavuz yok, "tekrar dene" yok. Aradaki fark tam olarak bu.
+ */
+const EXAM_LESSON: Step[] = [
+  { stage: 3, need: 1, label: 'Sınav — kılavuz yok, tek deneme', alpha: 0 },
+];
 
 type Info = {
   title: string;
@@ -153,6 +163,11 @@ function failedChecks(r: ShapeResult): string[] {
 export function render(root: HTMLElement, subject?: string): () => void {
   const target = subject ?? 'и';
   const info = describe(target);
+  // Sınav listesi açıksa bu ekran bir sınav sorusudur (bkz. srs/session.ts).
+  // Zayıf nokta serisi de liste kullanıyor ama o ÇALIŞMA — tam ders açılır.
+  const exam = examActive();
+  const LESSON = exam ? EXAM_LESSON : FULL_LESSON;
+  const TOTAL = LESSON.reduce((n, s) => n + s.need, 0);
 
   root.className = 'screen flush';
   root.innerHTML = `
@@ -433,6 +448,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
         stepIndex++;
         passedInStep = 0;
       }
+    } else if (exam) {
+      // Sınavda ikinci hak yok: başarısız deneme de adımı bitirir. Ders
+      // tekrarlatır, sınav not verir — ekranda söylenen de bu.
+      stepIndex++;
+      passedInStep = 0;
     }
     drawDots();
     finished = stepIndex >= LESSON.length;
@@ -484,7 +504,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
         <p class="fine">${
           passed
             ? `${passedTotal()} / ${TOTAL} tamam.`
-            : 'Bu deneme sayılmadı — kademe ilerlemedi, tekrar dene.'
+            : exam
+              ? 'Sınavda tek deneme var — bu puan kaydedildi.'
+              : 'Bu deneme sayılmadı — kademe ilerlemedi, tekrar dene.'
         }</p>
       </div>`;
 
@@ -546,25 +568,19 @@ export function render(root: HTMLElement, subject?: string): () => void {
       await ensureCard('word:dictation', target, wordEntry.level.id);
     }
 
-    const queue = await buildQueue();
+    const dest = await nextAfter(target);
     if (disposed) return;
-    const seen = seenSubjects();
-    const next = queue.cards.find((c) => c.subject !== target && !seen.has(c.subject));
 
     resultBox.insertAdjacentHTML(
       'afterbegin',
       `<div class="ok" style="text-align:center">
-         <b>Ders tamam</b> · ${scores.length} deneme, ortalama ${Math.round(average * 100)}
+         <b>${exam ? 'Cevap kaydedildi' : 'Ders tamam'}</b> ·
+         ${scores.length} deneme, ortalama ${Math.round(average * 100)}
        </div>`,
     );
 
-    if (next) {
-      nextHash = practiceHref(next);
-      checkBtn.textContent = `Sonraki ders · ${queue.total}`;
-    } else {
-      nextHash = '#/ozet';
-      checkBtn.textContent = 'Oturumu bitir';
-    }
+    nextHash = dest.href;
+    checkBtn.textContent = dest.label;
   }
 
   return () => {
