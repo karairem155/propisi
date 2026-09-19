@@ -6,20 +6,53 @@ Spesifikasyon: `rus-el-yazisi-app-brief.md` (Rev. 2). Bu depo o brief'in **Faz 0
 
 ---
 
-## Faz 0 kapsamı
+## Durum
 
-| Ne | Durum |
-|---|---|
-| Vite + TS iskeleti, PWA manifest + service worker | ✅ |
-| Apple Pencil giriş katmanı (coalesced + predicted, basınç, palm rejection) | ✅ |
-| perfect-freehand mürekkep render'ı, üç katmanlı canvas | ✅ |
-| Propisi defter zemini (taban/üst/orta çizgi + 65° eğik çizgiler) | ✅ |
-| Hamle kaydı + IndexedDB + JSON dışa/içe aktarma (brief 6.3, 12.3) | ✅ |
-| Bölüm 13'ün üç cihaz testi | ✅ (cihazda çalıştırılacak) |
-| Cloudflare Pages dağıtımı | hazır, henüz yayınlanmadı |
+Uygulama uçtan uca çalışıyor: patika → ders aç → çalış → değerlendir → FSRS
+ilerlet → sıradaki kart → oturum özeti.
 
-**Faz 0 bir öğrenme uygulaması değil.** Riskleri ölçen bir ölçüm aletidir. Harf verisi,
-değerlendirme ve tekrar sistemi Faz 1+'te gelir.
+### Alıştırma türleri
+
+| Tür | Ne yapar | Ayırt edici kontrolü |
+|---|---|---|
+| **Element** | 6 temel şekil, satır boyunca tekrar | şekil örtüşmesi |
+| **Harf** | 3 kademeli ders (7 deneme) | kademe 3'te kılavuz yok |
+| **Bağlantı** | harf çifti | **kalem kalkmamalı** (безотрывное) |
+| **Kelime** | kelime yazımı, vurgu işaretli | bant kapsaması atlanan harfi yakalar |
+| **Tanıma** | 3 soru, 3 yön | şıklar karışan harflerden |
+| **Harf avı** | kelimede harfi işaretle | ambiguity eğitimi |
+| **Dikte** | duy → yaz, kılavuzsuz | konumdan bağımsız değerlendirme |
+| **Eşleştirme** | el yazısı ↔ anlam, dördü birden | toplu karışma |
+
+Ders zinciri kendiliğinden açılıyor — harf: **yaz → tanı → av**,
+kelime: **yaz → dikte → eşleştir**. Hepsi ayrı FSRS kartı, hepsi aynı karışık
+kuyrukta (brief 7.0: "tek tip tekrar sıkıcıdır ve transfer sağlamaz").
+
+### Değerlendirme
+
+Şekil örtüşmesi (`src/grading/shape.ts`) — glyph verisi gerektirmiyor, harfin
+şekli fonttan geliyor. İki ölçü: **isabet** (mürekkebin harf üstünde kalan
+oranı) ve **kapsama** (harfin geçilen oranı). Tek başına ikisi de kandırılabilir.
+
+Buna **bant kapsaması** eklendi: harf dokuz dikey banda bölünüp her bandın
+kapsaması ayrı ölçülüyor. Nedeni ölçümle bulundu — yalnız toplam kapsamaya
+bakınca `ш` yerine iki tepe çizmek 92 "Çok iyi" alıyordu; uygulamanın ayırt
+etmesi gereken en önemli hata gözden kaçıyordu. Bantla 45'e düştü, doğru çizim
+94'te kaldı.
+
+**Ölçek bilerek normalize edilmiyor.** Brief 6.1 uyarıyor: Procrustes ölçek
+normalizasyonu iki tepeli `и`yi üç tepeli `ш`ya mükemmel uyduruyor. Konum
+hizalaması (kılavuzsuz kademelerde) güvenli, ölçek değil.
+
+**Yakalanmayanlar:** yön, hamle sırası, kalem kalkışı (bağlantı hariç). Bunlar
+glyph verisi ister. Başlangıç noktası denetimi (`src/data/starts.ts`) yönün
+yakalanabilen yarısını veriyor.
+
+### Doğrulanmayı bekleyen
+
+`src/data/starts.ts` — 33 harfin başlangıç noktası. Propisi geleneğinden
+türetildi, doğrulanmış bir kaynaktan kopyalanmadı. **14 harfte emin değilim.**
+Toplu kontrol: **Profil → Geliştirici → Başlangıç noktaları**.
 
 ---
 
@@ -160,15 +193,16 @@ ama satır yapısı korunuyor.
 
 ```
 src/
-  data/      curriculum.ts — 7 eleman + 8 harf grubu + bağlantı/kelime listeleri
-  srs/       cards.ts (kart modeli, not eşleme) · scheduler.ts (ts-fsrs, kuyruk)
+  data/      curriculum.ts (müfredat) · starts.ts (başlangıç noktaları) · confusables.ts
+  srs/       cards.ts · scheduler.ts (ts-fsrs, kuyruk) · session.ts · stats.ts
   canvas/    pointer.ts (Pencil girişi) · ink.ts (perfect-freehand) · surface.ts (3 katman)
   ui/        paper.ts · mascot.ts (kadro) · assets.ts (görsel yuvaları) · style.css · fonts/
   db/        db.ts (IndexedDB v2: attempts · settings · cards) · export.ts (JSON yedek)
-  grading/   decimate.ts — Faz 1'de adapter.ts, diagnose.ts, elements.ts, humps.ts gelecek
-  screens/   bugun · patika · alfabe · ilerleme · profil
+  grading/   shape.ts (örtüşme + bant kapsaması) · decimate.ts
+  screens/   tekrar · patika · alfabe · ilerleme · profil · ozet
+             calisma (element/harf/bağlantı/kelime) · tani · av · dikte · eslestir
              + sandbox · test-voice · test-latency · test-scribble · records
-  dev/       mascots.ts (kadro galerisi) — Faz 1'de kalibrasyon ekranı buraya
+  dev/       mascots.ts (kadro galerisi) · baslangic.ts (başlangıç noktası kontrolü)
 tools/
   fonts/     Bad Script (OFL 1.1) — Faz 1 glyph bootstrap'i, ikon üretimi
 docs/
