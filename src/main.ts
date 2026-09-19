@@ -263,7 +263,16 @@ function showUpdateBar(): void {
   const bar = document.createElement('div');
   bar.id = 'updateBar';
   bar.className = 'update-bar';
-  bar.innerHTML = `<span>Yeni sürüm hazır.</span><button type="button">Yenile</button>`;
-  bar.querySelector('button')!.addEventListener('click', () => location.reload());
+  // Kapatma şart: çubuk yüzüyor ve altındaki içeriği örtüyor. Dersin
+  // ortasındaki birine "ya yenile ya da bu çubukla yaşa" demek olmaz.
+  bar.innerHTML = `
+    <span>Yeni sürüm hazır.</span>
+    <button type="button" data-act="reload">Yenile</button>
+    <button type="button" data-act="close" class="update-close" aria-label="Kapat">✕</button>`;
+  bar.addEventListener('click', (e) => {
+    const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset['act'];
+    if (act === 'reload') location.reload();
+    if (act === 'close') bar.remove();
+  });
   app.appendChild(bar);
 }

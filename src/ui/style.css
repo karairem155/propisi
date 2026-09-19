@@ -1944,3 +1944,11 @@ nav.tabs .tab-badge {
   background: var(--mint);
   transition: width 0.4s ease;
 }
+
+.update-bar .update-close {
+  min-height: 34px;
+  padding: 6px 11px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 13px;
+}
