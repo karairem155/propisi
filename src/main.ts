@@ -57,6 +57,7 @@ const routes: Record<string, Route> = {
   '/test/scribble': { title: 'Test 3 — Scribble', tab: 'profile', load: async () => (await import('./screens/test-scribble')).render },
   '/records': { title: 'Kayıtlar ve yedek', tab: 'profile', load: async () => (await import('./screens/records')).render },
   '/dev/mascots': { title: 'Maskot kadrosu', tab: 'profile', load: async () => (await import('./dev/mascots')).render },
+  '/dev/baslangic': { title: 'Başlangıç noktaları', tab: 'profile', load: async () => (await import('./dev/baslangic')).render },
 };
 
 /** Parametre alan rotalar — tam eşleşme yerine önek eşleşmesi. */

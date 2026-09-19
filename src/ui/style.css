@@ -1373,3 +1373,44 @@ nav.tabs .tab-badge {
   font-size: 18px;
   font-weight: 800;
 }
+
+/* ── Başlangıç noktası doğrulama sayfası ────────────────────────────────── */
+
+.start-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+}
+
+.start-cell {
+  text-align: center;
+  background: var(--paper);
+  border-radius: var(--r-md);
+  padding: 6px 4px 8px;
+  border: 1px solid var(--line);
+}
+
+.start-cell.shaky {
+  border-color: var(--amber);
+  background: var(--warn-bg);
+}
+
+.start-cell canvas {
+  display: block;
+  margin: 0 auto;
+}
+
+.start-cell b {
+  display: block;
+  font-family: 'Bad Script', cursive;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.start-cell span {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.25;
+}

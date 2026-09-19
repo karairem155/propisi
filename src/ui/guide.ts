@@ -69,6 +69,46 @@ export function measureGuide(
   };
 }
 
+/** Normalize başlangıç noktasını ekran koordinatına çevirir. */
+export function startPointOf(
+  box: GuideBox,
+  start: { x: number; y: number },
+  rowHeight: number,
+): { x: number; y: number } {
+  return {
+    x: box.x + start.x * box.width,
+    y: box.baseline - start.y * rowHeight,
+  };
+}
+
+/**
+ * Propisi kitaplarındaki numaralı başlangıç noktası.
+ * Kılavuz görünürken çizilir — kılavuz yoksa ipucu da olmamalı.
+ */
+export function drawStartMarker(
+  ctx: CanvasRenderingContext2D,
+  at: { x: number; y: number },
+  rowHeight: number,
+  alpha = 1,
+): void {
+  const r = Math.max(7, rowHeight * 0.13);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#35c79a';
+  ctx.beginPath();
+  ctx.arc(at.x, at.y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = Math.max(1.5, r * 0.22);
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = `800 ${Math.round(r * 1.25)}px Nunito, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('1', at.x, at.y + r * 0.06);
+  ctx.restore();
+}
+
 export type GuideStyle = {
   /** 0 = görünmez (Kademe 3), 0.28 civarı = kılavuzlu (Kademe 1). */
   alpha: number;

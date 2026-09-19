@@ -14,7 +14,15 @@ import { InkSurface } from '../canvas/surface';
 import { attachPointer, type PointerHandle } from '../canvas/pointer';
 import { outlinePath, styleFor } from '../canvas/ink';
 import { drawPaper, DEFAULT_PAPER, type PaperConfig } from '../ui/paper';
-import { ensureGuideFont, measureGuide, targetPainter, type GuideBox } from '../ui/guide';
+import {
+  drawStartMarker,
+  ensureGuideFont,
+  measureGuide,
+  startPointOf,
+  targetPainter,
+  type GuideBox,
+} from '../ui/guide';
+import { startOf } from '../data/starts';
 import {
   elementCount,
   elementPainter,
@@ -126,6 +134,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
   let elBox: ElementBox | null = null;
 
   /** Hedef şekli çizen işlev — hem kılavuz hem değerlendirme aynı kaynağı kullanır. */
+  const start = info.element ? undefined : startOf(target);
+  /** Başlangıç işaretinin ekran konumu — hem çizim hem denetim kullanıyor. */
+  const startAt = (): { x: number; y: number } | null =>
+    start && box ? startPointOf(box, start, paper.rowHeight) : null;
+
   const painter = (): ((ctx: CanvasRenderingContext2D) => void) | null => {
     if (info.element) return elBox ? elementPainter(target, elBox) : null;
     return box ? targetPainter(target, box) : null;
@@ -148,6 +161,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
       ctx.fillStyle = '#1d3f8f';
       paint(ctx);
       ctx.restore();
+
+      // İşaret yalnızca kılavuz görünürken — kılavuz yoksa ipucu da olmamalı.
+      const at = startAt();
+      if (at) drawStartMarker(surface.ctx.paper, at, paper.rowHeight, Math.min(1, alpha * 3));
     }
     surface.clearCommitted();
     surface.ctx.committed.fillStyle = INK_COLOR;
@@ -294,17 +311,31 @@ export function render(root: HTMLElement, subject?: string): () => void {
     // Atlanan/taşan bölgeleri mürekkebin üstüne bindir.
     surface.ctx.live.drawImage(result.overlay, 0, 0);
 
+    // Başlangıç denetimi — yönün yakalanabilen yarısı. Tam yön/hamle sırası
+    // glyph verisi ister; başlangıç noktası onun küçük ama işe yarar parçası.
+    const at = startAt();
+    const firstPoint = strokes[0]?.points[0];
+    const startOff =
+      at && firstPoint
+        ? Math.hypot(firstPoint.x - at.x, firstPoint.y - at.y) > paper.rowHeight * 0.45
+        : false;
+
     const msg = shapeMessage(result, info.element ? 'şekil' : 'harf');
     const checks = failedChecks(result);
+    if (startOff) checks.unshift('start');
     const pct = (v: number) => Math.round(v * 100);
 
     resultBox.innerHTML = `
       <div class="card result-card">
         <div class="result-head">
-          <b>${msg.title}</b>
+          <b>${startOff && !result.missedSection ? 'Yanlış yerden başladın' : msg.title}</b>
           <span class="result-score">${pct(result.score)}</span>
         </div>
-        <p class="fine" style="margin:4px 0 12px">${msg.detail}</p>
+        <p class="fine" style="margin:4px 0 12px">${
+          startOff
+            ? `Yeşil noktadan başlamalısın${start?.note ? ` — ${start.note.toLocaleLowerCase('tr')}` : ''}. ${msg.detail}`
+            : msg.detail
+        }</p>
         <div class="bar-row">
           <span class="bar-name">İsabet</span>
           <div class="bar-track"><i style="width:${pct(result.precision)}%;background:var(--mint)"></i></div>

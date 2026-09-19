@@ -133,6 +133,11 @@ export function render(root: HTMLElement): () => void {
           <span class="txt"><b>Çizim yüzeyi</b><span>Pencil giriş katmanı, hamle kaydı</span></span>
           <span class="go">›</span>
         </a>
+        <a href="#/dev/baslangic">
+          <span class="badge">${mascot('cubuk', { size: 40, mood: 'think' })}</span>
+          <span class="txt"><b>Başlangıç noktaları</b><span>33 harfin kalem başlangıcı — doğrulanmayı bekliyor</span></span>
+          <span class="go">›</span>
+        </a>
         <a href="#/dev/mascots">
           <span class="badge">${mascot('ilmek', { size: 40, mood: 'cheer' })}</span>
           <span class="txt"><b>Maskot kadrosu</b><span>Karakterler ve ruh hâlleri</span></span>
