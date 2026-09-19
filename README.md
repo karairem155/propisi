@@ -111,6 +111,25 @@ Bu otomatikleştirilmeden önce iki kez kayma yaşandı (`assets.js` listede olu
 `scheduler.js` üretilip listede olmadı); ikisi de sessiz hata — biri çevrimdışı açılışı
 bozar, diğeri install adımını 404'te patlatır.
 
+### Dosya adları içerik hash'i taşır
+
+Eskiden sabitti (`js/session.js`), gerekçesi SHELL listesinin elle yazılmasıydı. O
+gerekçe ortadan kalktıktan sonra kural kaldı ve **canlıda bütün alıştırma ekranları
+boş açılmaya başladı** — dev sunucusunda sorunsuzdu:
+
+```
+SyntaxError: The requested module './session.js' does not provide an export named 't'
+```
+
+Yeni `app.js` ile önbellekteki ESKİ `session.js` aynı sayfada buluşuyordu; ad aynı
+olduğu için hem service worker hem tarayıcı eskisini veriyordu ve minify edilmiş
+sembol adları tutmuyordu. Hash'le eski ve yeni dosyalar bir arada durabiliyor, bir
+sayfa her zaman kendi içinde tutarlı bir küme yüklüyor.
+
+Aynı sınıftan ikinci hata: `sw.js` içindeki `caches.match(request)` **bütün**
+önbelleklerde arıyor ve aktivasyon sırasında ölmekte olan sürümün dosyasını
+verebiliyordu. Artık yalnız kendi sürümünün önbelleğine bakıyor.
+
 ---
 
 ## Mimari — neden böyle
