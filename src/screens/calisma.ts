@@ -26,6 +26,7 @@ import { ensureCard, review, buildQueue } from '../srs/scheduler';
 import { Rating } from '../srs/cards';
 import { getSetting, saveAttempt } from '../db/db';
 import { recordReview } from '../srs/stats';
+import { pushResult, seenSubjects } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
 import { ELEMENTS, LEVELS, levelOfLetter } from '../data/curriculum';
@@ -260,9 +261,12 @@ export function render(root: HTMLElement, subject?: string): () => void {
     syncButtons();
   });
 
+  /** Değerlendirmeden sonra nereye gidileceği; kuyruk bitmişse özet. */
+  let nextHash = '#/ozet';
+
   checkBtn.addEventListener('click', () => {
     if (checked) {
-      location.hash = '#/';
+      location.hash = nextHash;
       return;
     }
     if (!strokes.length) return;
@@ -345,10 +349,30 @@ export function render(root: HTMLElement, subject?: string): () => void {
     ]);
 
     await recordReview();
+    pushResult({
+      subject: target,
+      label: info.title,
+      score: result.score,
+      checks,
+      at: Date.now(),
+    });
 
+    // Sıradaki kart: bu oturumda henüz görülmemiş olan öncelikli. Aynı kartı
+    // arka arkaya vermemek için — "Again" notu FSRS'te dakikalar sonrasına
+    // zamanlıyor, yoksa aynı harfte takılı kalınırdı.
     const queue = await buildQueue();
-    if (!disposed && queue.total > 0) {
+    if (disposed) return;
+    const seen = seenSubjects();
+    // Bu oturumda görülmemiş bir konu varsa ona geç. Hepsi görülmüşse oturumu
+    // bitir — aynı harfi döngüye sokmaktansa özet göstermek doğru.
+    const next = queue.cards.find((c) => c.subject !== target && !seen.has(c.subject));
+
+    if (next) {
+      nextHash = `#/calis/${encodeURIComponent(next.subject)}`;
       checkBtn.textContent = `Devam · ${queue.total}`;
+    } else {
+      nextHash = '#/ozet';
+      checkBtn.textContent = 'Oturumu bitir';
     }
   }
 

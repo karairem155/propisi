@@ -16,6 +16,7 @@ import { buildQueue, allCards, type Queue } from '../srs/scheduler';
 import { ELEMENTS, LEVELS } from '../data/curriculum';
 import { getSetting } from '../db/db';
 import { statsView, type StatsView } from '../srs/stats';
+import { startSession } from '../srs/session';
 import { art } from '../ui/assets';
 import { mascot } from '../ui/mascot';
 
@@ -58,6 +59,8 @@ function labelOf(subject: string): { label: string; isLetter: boolean } {
 
 export function render(root: HTMLElement): () => void {
   root.className = 'screen';
+  // Tekrar sayfasına her dönüşte oturum sıfırlanır — özet "bu seri" demek.
+  startSession();
   root.innerHTML = '<div class="empty-hint">Kuyruk hazırlanıyor…</div>';
 
   let disposed = false;

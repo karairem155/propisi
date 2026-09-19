@@ -42,6 +42,7 @@ const TABS: { tab: string; href: string; icon: string; label: string }[] = [
 const routes: Record<string, Route> = {
   '/': { title: 'Tekrar', tab: 'review', load: async () => (await import('./screens/tekrar')).render },
   '/patika': { title: 'Patika', tab: 'path', load: async () => (await import('./screens/patika')).render },
+  '/ozet': { title: 'Oturum özeti', tab: 'review', load: async () => (await import('./screens/ozet')).render },
   '/profil': { title: 'Profil', tab: 'profile', load: async () => (await import('./screens/profil')).render },
 
   // İlerleme artık sekme değil — Patika şeridinden ve Profil'den açılır.

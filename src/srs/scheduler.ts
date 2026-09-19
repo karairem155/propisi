@@ -72,6 +72,22 @@ export async function review(
   return card;
 }
 
+/**
+ * Şu an gerçekten çalışılabilen kart türleri.
+ *
+ * NEDEN VAR: tanıma (`:read`), bağlantı, kelime ve dikte kartlarının ekranı
+ * henüz yok. Zamanlanırlarsa kuyrukta sonsuza kadar kalıyorlar — çalışma ekranı
+ * yalnızca `:write` kartını değerlendirdiği için vadeleri hiç ilerlemiyor ve
+ * aynı harf arka arkaya geliyordu. Çalışılamayan şey zamanlanmamalı.
+ *
+ * Ekranları geldikçe buraya eklenecek.
+ */
+const PRACTICABLE: CardKind[] = ['letter:write', 'element:write'];
+
+export function isPracticable(card: SrsCard): boolean {
+  return PRACTICABLE.includes(card.kind);
+}
+
 export type QueueBucket = 'letter' | 'element' | 'join' | 'word' | 'dictation';
 
 export type Queue = {
@@ -101,7 +117,7 @@ function bucketOf(card: SrsCard): QueueBucket {
  * brief 8.3: günlük tekrar limiti YOK. Sayı ne çıkarsa o.
  */
 export async function buildQueue(now = new Date()): Promise<Queue> {
-  const due = (await allCards()).filter((c) => isDue(c, now));
+  const due = (await allCards()).filter((c) => isDue(c, now) && isPracticable(c));
   due.sort((a, b) => a.fsrs.due.getTime() - b.fsrs.due.getTime());
 
   const counts: Record<QueueBucket, number> = {
