@@ -96,6 +96,9 @@ const PRACTICABLE: CardKind[] = [
   'word:read',
   'capital',
   'sentence',
+  'word:build',
+  'word:gap',
+  'sentence:read',
 ];
 
 /**
@@ -109,6 +112,9 @@ export function practiceHref(card: SrsCard): string {
   if (card.kind === 'word:read') return `#/eslestir/${sub}`;
   if (card.kind === 'word:dictation') return `#/dikte/${sub}`;
   if (card.kind === 'sentence') return `#/cumle/${sub}`;
+  if (card.kind === 'sentence:read') return `#/oku/${sub}`;
+  if (card.kind === 'word:build') return `#/kur/${sub}`;
+  if (card.kind === 'word:gap') return `#/eksik/${sub}`;
   if (card.kind === 'capital') return `#/calis/${sub}`;
   return `#/calis/${sub}`;
 }
@@ -128,7 +134,7 @@ export type Queue = {
 };
 
 function bucketOf(card: SrsCard): QueueBucket {
-  if (card.kind === 'sentence') return 'sentence';
+  if (card.kind === 'sentence' || card.kind === 'sentence:read') return 'sentence';
   if (card.kind === 'capital') return 'letter';
   if (card.kind === 'letter:hunt') return 'letter';
   if (card.kind === 'word:dictation') return 'dictation';

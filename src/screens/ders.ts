@@ -29,9 +29,13 @@ type Step = { href: string; label: string; mode?: string };
 function stepsFor(subject: string): Step[] {
   const enc = encodeURIComponent(subject);
 
-  // Cümle kendi ekranında zaten kelime kelime ilerliyor; bölmeye gerek yok.
+  // Cümle: önce OKU (anlamını çöz), sonra YAZ. Anlamadığın bir cümleyi
+  // kopyalamak kopyalamaktan ibaret kalıyor.
   if (findSentence(subject)) {
-    return [{ href: `#/cumle/${enc}`, label: 'Cümle' }];
+    return [
+      { href: `#/oku/${enc}`, label: 'Okuma' },
+      { href: `#/cumle/${enc}`, label: 'Yazım' },
+    ];
   }
 
   // Büyük harf: tanıma ve harf avı küçük harf için kurulu, büyüğe uymuyor.
@@ -58,8 +62,13 @@ function stepsFor(subject: string): Step[] {
 
   const word = findWord(subject);
   if (word) {
-    const steps: Step[] = [{ href: `#/calis/${enc}`, label: 'Yazım', mode: 'trace' }];
-    steps.push({ href: `#/dikte/${enc}`, label: 'Dikte' });
+    // Beş adım, beş ayrı kanal: imlâ → yazım → okuma → duyma → anlam.
+    const steps: Step[] = [
+      { href: `#/kur/${enc}`, label: 'Kelime kur' },
+      { href: `#/calis/${enc}`, label: 'Yazım', mode: 'trace' },
+      { href: `#/eksik/${enc}`, label: 'Eksik harf' },
+      { href: `#/dikte/${enc}`, label: 'Dikte' },
+    ];
     // Eşleştirme dört kelimeyi karşılaştırıyor; seviyede o kadar yoksa atla.
     if (word.level.words.length >= 3) {
       steps.push({ href: `#/eslestir/${enc}`, label: 'Eşleştirme' });

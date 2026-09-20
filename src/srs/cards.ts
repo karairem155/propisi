@@ -16,8 +16,11 @@ export type CardKind =
   | 'word:write' // Anlam/ses verilir, el yazısıyla yaz
   | 'word:read' // El yazısı gösterilir, anlamı?
   | 'word:dictation' // Duy → yaz
+  | 'word:build' // Harfleri sırayla diz — imlâ, çizim yok
+  | 'word:gap' // El yazısı kelimede eksik harfi bul
   | 'capital' // Büyük harf — küçüğünün büyütülmüşü değil, ayrı şekil
   | 'sentence' // Cümle yazımı — büyük harf, boşluk, nokta
+  | 'sentence:read' // El yazısı cümleyi anla
   | 'checkpoint'; // Seviye sınavı — patika kilidini açan düğüm
 
 export type CardId = string; // 'letter:а:write' | 'join:ол' | 'word:мама:dictation'

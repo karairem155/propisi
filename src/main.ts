@@ -94,6 +94,24 @@ const prefixRoutes: Route[] = [
     load: async () => (await import('./screens/eslestir')).render,
   },
   {
+    title: 'Kelime kur',
+    tab: 'path',
+    prefix: '/kur/',
+    load: async () => (await import('./screens/kur')).render,
+  },
+  {
+    title: 'Eksik harf',
+    tab: 'path',
+    prefix: '/eksik/',
+    load: async () => (await import('./screens/eksik')).render,
+  },
+  {
+    title: 'Cümle okuma',
+    tab: 'path',
+    prefix: '/oku/',
+    load: async () => (await import('./screens/oku')).render,
+  },
+  {
     title: 'Ders',
     tab: 'path',
     prefix: '/ders/',
