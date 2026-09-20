@@ -45,6 +45,7 @@ import { pushResult, examActive, playlistMode } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
 import { sfx, sfxForScore } from '../audio/sfx';
 import { burst, countUp, pop, shake } from '../ui/celebrate';
+import { playWrite, type WriteAnim } from '../ui/write-anim';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
 import {
   CAPITALS,
@@ -256,7 +257,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
         <b class="${info.element ? 'as-text' : ''}">${info.title}</b>
         <span id="stepLabel">${LESSON[0]!.label}</span>
       </div>
-      <button id="say" class="ghost" style="min-height:38px;padding:8px 13px" title="Dinle">🔊</button>
+      <div class="practice-tools">
+        <button id="show" class="ghost" title="Nasıl yazılır">✎</button>
+        <button id="say" class="ghost" title="Dinle">🔊</button>
+      </div>
     </div>
     <div class="step-dots" id="dots"></div>
     <div class="ink-surface" id="surface"></div>
@@ -278,6 +282,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
   const undoBtn = root.querySelector<HTMLButtonElement>('#undo')!;
   const clearBtn = root.querySelector<HTMLButtonElement>('#clear')!;
   const sayBtn = root.querySelector<HTMLButtonElement>('#say')!;
+  const showBtn = root.querySelector<HTMLButtonElement>('#show')!;
 
   const surface = new InkSurface(host, { desynchronized: true });
   const strokes: InkStroke[] = [];
@@ -422,6 +427,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
     {
       onStart(pt, e) {
         if (checked) return;
+        // Kullanıcı yazmaya başladıysa gösterim biter — canlı katmanı
+        // paylaşıyorlar, ikisi aynı anda çizemez.
+        if (anim) stopAnim();
         pointerType = e.pointerType;
         current = [pt];
         mark = { coalesced: pointer.stats.coalesced, rawMoves: pointer.stats.rawMoves };
@@ -499,6 +507,39 @@ export function render(root: HTMLElement, subject?: string): () => void {
     remeasure();
     drawDots();
   })();
+
+  /**
+   * "Nasıl yazılır" — kalem harfi yazarken izle.
+   *
+   * Canlı katmana çiziliyor, yani kullanıcının mürekkebinin üstüne değil
+   * yanına: animasyon biterken katman temizleniyor ve yazılmış olan duruyor.
+   * Elementlerde yok — onların şekli fontta değil kodda (ui/elements.ts).
+   */
+  let anim: WriteAnim | null = null;
+  const stopAnim = () => {
+    anim?.stop();
+    anim = null;
+    showBtn.classList.remove('on');
+  };
+
+  if (info.element) {
+    showBtn.remove();
+  } else {
+    showBtn.addEventListener('click', () => {
+      if (anim) return stopAnim();
+      if (!box) return;
+      showBtn.classList.add('on');
+      peeked = true;
+      anim = playWrite(surface.ctx.live, info.text, {
+        x: box.x,
+        baseline: box.baseline,
+        fontSize: box.fontSize,
+        family: box.family,
+        loop: true,
+      });
+      if (!anim) stopAnim();
+    });
+  }
 
   if (info.element) {
     sayBtn.remove();
@@ -786,6 +827,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   return () => {
     disposed = true;
+    stopAnim();
     pointer.detach();
     surface.destroy();
   };

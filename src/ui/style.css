@@ -2325,3 +2325,22 @@ button,
 .order-word:disabled {
   opacity: 0.22;
 }
+
+/* Çalışma ekranı araç düğmeleri — dinle ve "nasıl yazılır". */
+.practice-tools {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
+.practice-tools button {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.practice-tools button.on {
+  background: var(--mint);
+  color: #fff;
+}

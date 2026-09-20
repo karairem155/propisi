@@ -35,6 +35,8 @@ export type GuideBox = {
   width: number;
   /** Harfin görsel yüksekliği (çıkan/inen dahil). */
   height: number;
+  /** Kılavuzun font ailesi — yazım animasyonu aynı fontu kullanmalı. */
+  family: string;
 };
 
 /**
@@ -73,6 +75,7 @@ export function measureGuide(
     fontSize,
     width: m.width,
     height: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+    family: FAMILY,
   };
 }
 
