@@ -139,7 +139,8 @@ export const LEVELS: Level[] = [
       { ch: 'б', say: 'ба', hint: 'çıkan kuyruk' },
       { ch: 'ё', derivedFrom: 'е', hint: 'е + iki nokta' },
     ],
-    joins: ['ос', 'ао', 'од', 'се', 'ба'],
+    // о ve б gövde üstünde bitiyor: üst bağlantı alıştırması burada başlıyor.
+    joins: ['ос', 'ао', 'од', 'се', 'ба', 'ом', 'оп'],
     words: [
       { ru: 'мама', tr: 'anne', stress: 1 },
       { ru: 'дом', tr: 'ev', stress: 1 },
@@ -154,7 +155,7 @@ export const LEVELS: Level[] = [
     name: 'Küçük ilmekli',
     ru: 'ь ъ ы в',
     letters: [{ ch: 'ь', say: 'мягкий знак' }, { ch: 'ъ', say: 'твёрдый знак' }, { ch: 'ы', hint: 'ь + и' }, { ch: 'в', say: 'ва' }],
-    joins: ['ыв', 'вь', 'сь'],
+    joins: ['ыв', 'вь', 'сь', 'ви', 'ва'],
     words: [
       { ru: 'вода', tr: 'su', stress: 3 },
       { ru: 'сыр', tr: 'peynir', stress: 1 },
@@ -168,7 +169,7 @@ export const LEVELS: Level[] = [
     name: 'Yön değişimi',
     ru: 'н ю к',
     letters: [{ ch: 'н', say: 'на' }, { ch: 'ю' }, { ch: 'к', say: 'ка' }],
-    joins: ['нн', 'юк', 'ко'],
+    joins: ['нн', 'юк', 'ко', 'он', 'бу'],
     words: [
       { ru: 'окно', tr: 'pencere', stress: 3 },
       { ru: 'книга', tr: 'kitap', stress: 1 },
@@ -182,7 +183,7 @@ export const LEVELS: Level[] = [
     name: 'Saat yönü',
     ru: 'з э ж х ф',
     letters: [{ ch: 'з', say: 'за' }, { ch: 'э' }, { ch: 'ж', say: 'жа' }, { ch: 'х', say: 'ха' }, { ch: 'ф', say: 'фа' }],
-    joins: ['же', 'зо', 'ху'],
+    joins: ['же', 'зо', 'ху', 'оз', 'вж'],
     words: [
       { ru: 'хлеб', tr: 'ekmek', stress: 2 },
       { ru: 'жизнь', tr: 'hayat', stress: 1 },
@@ -267,6 +268,58 @@ export function capitalOf(subject: string): string | null {
 /** Büyük harfin hangi seviyede öğretildiği. */
 export function levelOfCapital(ch: string): string | undefined {
   return Object.keys(CAPITALS).find((id) => CAPITALS[id]!.includes(ch));
+}
+
+// ── Bağlantı türleri — безотрывное письмо'nun asıl kuralı ───────────────────
+//
+// Kullanıcı uyardı: "nasıl birleştiği de önemli cursive'de". Doğru; Rus el
+// yazısında iki bağlantı türü var ve hangisinin kullanılacağı ÖNCEKİ HARFİN
+// NEREDE BİTTİĞİNE bağlı — tahmin değil, mekanik bir kural:
+//
+//   · Üst bağlantı (верхнее соединение) — önceki harf GÖVDE ÜSTÜNDE bitiyorsa.
+//     Böyle biten altı harf var: о б в ъ ы ь
+//   · Alt bağlantı (нижнее соединение) — diğer bütün harfler taban çizgisinde
+//     bitiyor, bağlantı çizgisi tabandan yükseliyor.
+//
+// Fark görsel değil motor: üst bağlantıda kalem yukarıdan ineriyor, altta
+// tabandan tırmanıyor. Yanlışını yapan kalemi kaldırmak zorunda kalıyor.
+
+/** Gövde üstünde biten harfler — sonraki harfe ÜSTTEN bağlanırlar. */
+export const ENDS_HIGH = new Set(['о', 'б', 'в', 'ъ', 'ы', 'ь']);
+
+export type JoinKind = 'ust' | 'alt';
+
+export function joinKind(pair: string): JoinKind {
+  return ENDS_HIGH.has(pair[0] ?? '') ? 'ust' : 'alt';
+}
+
+export const JOIN_LABEL: Record<JoinKind, { name: string; ru: string; hint: string }> = {
+  ust: {
+    name: 'Üst bağlantı',
+    ru: 'верхнее соединение',
+    hint: 'Önceki harf gövde üstünde bitiyor — bağlantı yukarıdan iniyor.',
+  },
+  alt: {
+    name: 'Alt bağlantı',
+    ru: 'нижнее соединение',
+    hint: 'Önceki harf tabanda bitiyor — bağlantı tabandan yükseliyor.',
+  },
+};
+
+/**
+ * Kelime kaç hamlede yazılmalı?
+ *
+ * Rus el yazısında kelime TEK HAMLEDE yazılır. İstisna, harfin gövdesinden
+ * ayrı işareti olanlar: `й`nin kısa işareti ve `ё`nün iki noktası. Bunlar
+ * kelime bittikten sonra ekleniyor, yani her biri bir hamle daha.
+ */
+export function expectedStrokes(word: string): number {
+  let extra = 0;
+  for (const ch of word) {
+    if (ch === 'й' || ch === 'Й') extra += 1;
+    if (ch === 'ё' || ch === 'Ё') extra += 2;
+  }
+  return 1 + extra;
 }
 
 /** Bir harf çiftinin hangi seviyede öğretildiği. */

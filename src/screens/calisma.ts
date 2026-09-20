@@ -50,8 +50,11 @@ import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from 
 import {
   CAPITALS,
   ELEMENTS,
+  JOIN_LABEL,
   LEVELS,
   capitalOf,
+  expectedStrokes,
+  joinKind,
   findJoin,
   findWord,
   levelOfCapital,
@@ -166,10 +169,13 @@ function describe(subject: string): Info {
 
   const j = findJoin(subject);
   if (j) {
+    // Hangi bağlantı türü olduğu ÖNCEKİ HARFİN nerede bittiğine bağlı;
+    // mekanik kural, tahmin değil (curriculum.ts → joinKind).
+    const kind = JOIN_LABEL[joinKind(subject)];
     return {
       title: subject,
       text: subject,
-      sub: 'Kalem kaldırmadan yaz',
+      sub: `${kind.name} · ${kind.ru}`,
       say: subject,
       element: false,
       word: false,
@@ -270,7 +276,18 @@ export function render(root: HTMLElement, subject?: string): () => void {
       <span class="spacer"></span>
       <button id="check" class="primary" disabled>Kontrol et</button>
     </div>
-    ${info.word ? `<div class="word-strip"><b>${info.title}</b><span>${info.sub}</span></div>` : ''}
+    ${
+      info.word
+        ? `<div class="word-strip"><b>${info.title}</b><span>${info.sub}</span></div>`
+        : info.join
+          ? // Bağlantı türü ekranda durmalı: hangi türü çalıştığını bilmeden
+            // yapılan tekrar kas hafızası kurmuyor, sadece çizim oluyor.
+            `<div class="join-strip">
+               <span class="join-kind">${JOIN_LABEL[joinKind(target)].name}</span>
+               <span>${JOIN_LABEL[joinKind(target)].hint}</span>
+             </div>`
+          : ''
+    }
     <div class="scroll"><div id="result"></div></div>
   `;
 
@@ -636,10 +653,21 @@ export function render(root: HTMLElement, subject?: string): () => void {
     const checks = failedChecks(result);
     if (startOff) checks.unshift('start');
 
-    // brief 7.3 — bağlantının ASIL kuralı безотрывное: iki harf tek hamlede.
-    // Şekil doğru olsa bile kalem kalktıysa bağlantı öğrenilmemiş demektir.
-    const lifted = info.join && strokes.length > 1;
-    if (lifted) checks.unshift('lift');
+    /**
+     * безотрывное письмо — Rus el yazısının asıl kuralı.
+     *
+     * Bağlantı dersinde baştan beri denetleniyordu ama KELİMEDE denetlenmiyordu,
+     * oysa kural asıl orada geçerli: kelime tek hamlede yazılır. İstisna,
+     * gövdesinden ayrı işareti olan harfler — `й`nin kısa işareti, `ё`nün iki
+     * noktası. Beklenen hamle sayısı bundan çıkıyor (curriculum → expectedStrokes).
+     *
+     * Kılavuz görünürken DÜŞÜRMÜYOR: o kademede amaç şekli tanımak. Kılavuz
+     * kalkınca kural işliyor.
+     */
+    const allowed = info.join ? 1 : info.word ? expectedStrokes(info.text) : Infinity;
+    const tooMany = strokes.length > allowed;
+    const lifted = tooMany && (info.join || step().alpha === 0);
+    if (tooMany) checks.unshift('lift');
 
     const passed = result.score >= PASS && !startBlocks && !lifted;
     scores.push(result.score);
@@ -688,7 +716,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
         </div>
         <p class="fine" style="margin:4px 0 12px">${
           lifted
-            ? `${strokes.length} hamlede yazdın. Bağlantıda iki harf <b>tek hamlede</b>, kalem kaldırmadan yazılır — asıl öğrenilen şey bu.`
+            ? info.join
+              ? `${strokes.length} hamlede yazdın. Bağlantıda iki harf <b>tek hamlede</b>, kalem kaldırmadan yazılır — asıl öğrenilen şey bu.`
+              : `${strokes.length} hamlede yazdın, ${allowed} olmalıydı. Rus el yazısında
+                 <b>kelime tek hamlede</b> yazılır; yalnız <b>й</b> ve <b>ё</b> işaretleri
+                 sona eklenir.`
             : startBlocks
               ? `Yeşil noktadan başlamalısın${start?.note ? ` — ${start.note.toLocaleLowerCase('tr')}` : ''}. ${msg.detail}`
               : startOff
@@ -708,13 +740,13 @@ export function render(root: HTMLElement, subject?: string): () => void {
           <b>${pct(result.recall)}</b>
         </div>
         ${
-          info.join
+          allowed !== Infinity
             ? `<div class="bar-row">
                  <span class="bar-name">Hamle</span>
-                 <div class="bar-track"><i style="width:${strokes.length === 1 ? 100 : 30}%;background:${
-                   strokes.length === 1 ? 'var(--mint)' : 'var(--coral)'
+                 <div class="bar-track"><i style="width:${!tooMany ? 100 : 30}%;background:${
+                   !tooMany ? 'var(--mint)' : 'var(--coral)'
                  }"></i></div>
-                 <b>${strokes.length}</b>
+                 <b>${strokes.length} / ${allowed}</b>
                </div>`
             : ''
         }

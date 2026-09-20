@@ -2457,3 +2457,50 @@ button,
   letter-spacing: 0;
   margin-bottom: 6px;
 }
+
+/* Font seçiminde en belirleyici bilgi: birleştiriyor mu? */
+.font-join {
+  display: inline-block;
+  margin: 4px 0 2px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.font-join.yes {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+
+.font-join.no {
+  background: #fdeceb;
+  color: #9a2b1e;
+}
+
+/* Bağlantı türü şeridi — üst mü alt bağlantı mı, ekranda dursun. */
+.join-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border-radius: var(--r-md);
+  padding: 9px 13px;
+  box-shadow: var(--shadow-sm);
+}
+
+.join-kind {
+  flex: none;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: var(--sky-soft);
+  color: var(--sky-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.join-strip span:last-child {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.3;
+}

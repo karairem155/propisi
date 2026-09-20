@@ -22,6 +22,15 @@ export type CursiveFont = {
   /** Neyi iyi, neyi kötü yaptığı — seçim ekranında gösteriliyor. */
   note: string;
   license: string;
+  /**
+   * Harfleri BİRLEŞTİRİYOR mu?
+   *
+   * Rus el yazısının bütün kuralı безотрывное письмо — kelime tek hamlede,
+   * harfler bağlı. Harfleri ayrı basan bir font el yazısı öğretemez, ne kadar
+   * el yazısına benzerse benzesin. Ölçüldü: `мама`, `шишка`, `лишишь` iki
+   * fontta basılıp karşılaştırıldı.
+   */
+  joins: boolean;
 };
 
 /**
@@ -37,15 +46,17 @@ export const CURSIVE_FONTS: CursiveFont[] = [
     id: 'marck',
     family: "'Marck Script', cursive",
     label: 'Marck Script',
-    note: 'в, д, б harflerinde bağlantılı biçim. El yazısına daha yakın.',
+    note: 'Harfleri birleştiriyor; в, д, б bağlantılı biçimde.',
     license: 'OFL 1.1 · Denis Masharov',
+    joins: true,
   },
   {
     id: 'bad',
     family: "'Bad Script', cursive",
     label: 'Bad Script',
-    note: 'Bazı harfler (б в г д ж к т ф) matbu biçimin italiği.',
+    note: 'Harfleri BİRLEŞTİRMİYOR ve б в г д ж к т ф matbu biçimin italiği.',
     license: 'OFL 1.1 · Roman Shchyukin',
+    joins: false,
   },
 ];
 

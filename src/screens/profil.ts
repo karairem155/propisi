@@ -92,6 +92,9 @@ export function render(root: HTMLElement): () => void {
               <b>${f.label}</b>
               <small>${f.license}</small>
             </div>
+            <div class="font-join ${f.joins ? 'yes' : 'no'}">
+              ${f.joins ? '✓ harfleri birleştiriyor' : '✕ harfleri ayrı basıyor'}
+            </div>
             <div class="font-sample" style="font-family:${f.family}">бвгджктф</div>
             <div class="font-sample sm" style="font-family:${f.family}">Кот спит на окне.</div>
             <div class="fine" style="margin:0">${f.note}</div>
