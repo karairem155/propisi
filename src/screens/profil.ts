@@ -153,6 +153,11 @@ export function render(root: HTMLElement): () => void {
           <span class="txt"><b>Başlangıç noktaları</b><span>33 harfin kalem başlangıcı — doğrulanmayı bekliyor</span></span>
           <span class="go">›</span>
         </a>
+        <a href="#/dev/yazim">
+          <span class="badge">${mascot('kanca', { size: 40, mood: 'open' })}</span>
+          <span class="txt"><b>Yazım animasyonu</b><span>33 harfin kalem hareketi — fonttan türetildi, gözle denetle</span></span>
+          <span class="go">›</span>
+        </a>
         <a href="#/dev/mascots">
           <span class="badge">${mascot('ilmek', { size: 40, mood: 'cheer' })}</span>
           <span class="txt"><b>Maskot kadrosu</b><span>Karakterler ve ruh hâlleri</span></span>

@@ -2344,3 +2344,42 @@ button,
   background: var(--mint);
   color: #fff;
 }
+
+/* ── Yazım animasyonu galerisi (geliştirici) ─────────────────────────────── */
+
+.write-gallery {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.write-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: var(--r-sm);
+  background: #fff;
+  box-shadow: none;
+  min-height: 0;
+  overflow-x: auto;
+}
+
+.write-row.unsure {
+  outline: 2px solid var(--coral);
+  outline-offset: -2px;
+}
+
+.write-label {
+  flex: none;
+  width: 30px;
+  font-family: 'Bad Script', cursive;
+  font-size: 26px;
+  color: var(--sky-ink);
+}
+
+.write-row canvas {
+  flex: none;
+  border-radius: 6px;
+}

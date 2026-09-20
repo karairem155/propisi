@@ -59,6 +59,7 @@ const routes: Record<string, Route> = {
   '/records': { title: 'Kayıtlar ve yedek', tab: 'profile', load: async () => (await import('./screens/records')).render },
   '/dev/mascots': { title: 'Maskot kadrosu', tab: 'profile', load: async () => (await import('./dev/mascots')).render },
   '/dev/baslangic': { title: 'Başlangıç noktaları', tab: 'profile', load: async () => (await import('./dev/baslangic')).render },
+  '/dev/yazim': { title: 'Yazım animasyonu', tab: 'profile', load: async () => (await import('./dev/yazim')).render },
 };
 
 /** Parametre alan rotalar — tam eşleşme yerine önek eşleşmesi. */

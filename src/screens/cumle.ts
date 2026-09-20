@@ -29,6 +29,7 @@ import { pushResult } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
 import { sfx, sfxForScore } from '../audio/sfx';
 import { burst, countUp, pop, shake } from '../ui/celebrate';
+import { playWrite, type WriteAnim } from '../ui/write-anim';
 import { getSetting, saveAttempt } from '../db/db';
 import { mascot } from '../ui/mascot';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
@@ -68,7 +69,10 @@ export function render(root: HTMLElement, id?: string): () => void {
         <b class="as-text">Cümle</b>
         <span id="stepLabel">${words.length} kelime · ${sen.note}</span>
       </div>
-      <button id="say" class="ghost" style="min-height:38px;padding:8px 13px" title="Dinle">🔊</button>
+      <div class="practice-tools">
+        <button id="show" class="ghost" title="Nasıl yazılır">✎</button>
+        <button id="say" class="ghost" title="Dinle">🔊</button>
+      </div>
     </div>
 
     <div class="sentence-bar" id="bar">
@@ -94,6 +98,7 @@ export function render(root: HTMLElement, id?: string): () => void {
   const undoBtn = root.querySelector<HTMLButtonElement>('#undo')!;
   const clearBtn = root.querySelector<HTMLButtonElement>('#clear')!;
   const sayBtn = root.querySelector<HTMLButtonElement>('#say')!;
+  const showBtn = root.querySelector<HTMLButtonElement>('#show')!;
 
   const surface = new InkSurface(host, { desynchronized: true });
   const strokes: InkStroke[] = [];
@@ -179,6 +184,7 @@ export function render(root: HTMLElement, id?: string): () => void {
     {
       onStart(pt, e) {
         if (checked) return;
+        if (anim) stopAnim();
         pointerType = e.pointerType;
         current = [pt];
         if (!frame) frame = requestAnimationFrame(paint);
@@ -209,6 +215,28 @@ export function render(root: HTMLElement, id?: string): () => void {
     },
     { penOnly: false, usePredicted: true },
   );
+
+  // Kelime kelime gösterim: o an yazılacak kelimeyi kalemle yazar.
+  let anim: WriteAnim | null = null;
+  const stopAnim = () => {
+    anim?.stop();
+    anim = null;
+    showBtn.classList.remove('on');
+  };
+  showBtn.addEventListener('click', () => {
+    if (anim) return stopAnim();
+    if (!box) return;
+    showBtn.classList.add('on');
+    heard = true;
+    anim = playWrite(surface.ctx.live, word(), {
+      x: box.x,
+      baseline: box.baseline,
+      fontSize: box.fontSize,
+      family: box.family,
+      loop: true,
+    });
+    if (!anim) stopAnim();
+  });
 
   sayBtn.addEventListener('click', () => {
     heard = true;
@@ -246,6 +274,7 @@ export function render(root: HTMLElement, id?: string): () => void {
   });
 
   function nextWord(): void {
+    stopAnim();
     wordIndex++;
     strokes.length = 0;
     checked = false;
@@ -380,6 +409,7 @@ export function render(root: HTMLElement, id?: string): () => void {
 
   return () => {
     disposed = true;
+    stopAnim();
     pointer.detach();
     surface.destroy();
   };
