@@ -233,7 +233,8 @@ function ratingOf(score: number): Rating.Again | Rating.Hard | Rating.Good | Rat
 
 function failedChecks(r: ShapeResult): string[] {
   const out: string[] = [];
-  if (r.missedSection) out.push('humps');
+  // Tepe sayısı hatası iki yönlü: eksik tepe de fazla tepe de aynı kontrol.
+  if (r.missedSection || r.extraSection) out.push('humps');
   if (r.recall < 0.7) out.push('length');
   if (r.precision < 0.65) out.push('shape');
   return out;

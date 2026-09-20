@@ -28,6 +28,10 @@ export type ShapeResult = {
   weakestAt: number;
   /** Bir bölüm tamamen atlanmış mı (ör. üç tepeden biri). */
   missedSection: boolean;
+  /** FAZLADAN bir bölüm yazılmış mı (ör. iki tepe istenirken üç). */
+  extraSection: boolean;
+  /** Hedef dışında kalan mürekkebin en yoğun bandı. */
+  worstExtra: number;
   /** Atlanan harf bölgeleri kehribar, taşan mürekkep mercan. */
   overlay: HTMLCanvasElement;
 };
@@ -116,8 +120,20 @@ export function scoreShape(opts: ShapeOptions): ShapeResult {
   });
   const missedSection = weakest.covered < 0.5;
 
-  // Tamamen atlanan bölüm varsa F1 ne olursa olsun puan tavanlanır.
-  const score = missedSection ? Math.min(f1, 0.45 + weakest.covered * 0.2) : f1;
+  // Aynı analiz ters yönde: yazılanın hangi bandı hedefin DIŞINDA kalıyor.
+  const userBands = bandCoverage(user, targetTol, w, h);
+  const worstUser = userBands.reduce((acc, b) => (b.covered < acc.covered ? b : acc), {
+    covered: 1,
+    at: 0.5,
+  });
+  const extraSection = worstUser.covered < 0.5;
+  const worstExtra = worstUser.covered;
+
+  // Atlanan ya da fazladan yazılan bölüm varsa F1 ne olursa olsun tavanlanır.
+  // İkisinden hangisi kötüyse o belirliyor.
+  const worstBand = Math.min(weakest.covered, worstUser.covered);
+  const score =
+    missedSection || extraSection ? Math.min(f1, 0.45 + worstBand * 0.2) : f1;
 
   return {
     precision,
@@ -126,6 +142,8 @@ export function scoreShape(opts: ShapeOptions): ShapeResult {
     weakestBand: weakest.covered,
     weakestAt: weakest.at,
     missedSection,
+    extraSection,
+    worstExtra,
     overlay: buildOverlay(opts.width, opts.height, w, h, target, user, targetTol, userTol),
   };
 }
@@ -206,8 +224,16 @@ function rasterize(
 }
 
 /**
- * Hedefi dikey bantlara bölüp her bandın ayrı kapsamasını ölçer.
- * Yeterince hedef mürekkebi olmayan bantlar (kenar boşlukları) atlanır.
+ * Dikey bant analizi — İKİ YÖNDE de kullanılıyor.
+ *
+ * `bandCoverage(target, userTol)` → harfin hangi bölümü ATLANMIŞ.
+ * `bandCoverage(user, targetTol)` → yazılanın hangi bölümü FAZLADAN.
+ *
+ * İkincisi sonradan eklendi ve gerçek bir açığı kapattı: ölçüldü ki `и`
+ * istenirken `ш` yazmak 87, `о` istenirken `а` yazmak 92 alıyordu — ikisi de
+ * geçer not. Bant kapsaması yalnız HEDEFİN bantlarına bakıyordu, yani eksik
+ * yazmayı yakalıyor fazla yazmayı yakalamıyordu. Oysa `и`/`ш` ayrımı iki
+ * yönde de bu uygulamanın var oluş sebebi (brief 6.1).
  */
 function bandCoverage(
   target: Uint8Array,
@@ -350,6 +376,16 @@ export function shapeMessage(
     return {
       title: 'Bir bölümü atladın',
       detail: `${cap(noun)}in ${where} kısmı boş kaldı — kehribar bölgeye bak. Tamamını geç.`,
+    };
+  }
+  // Fazladan yazılan bölüm de en az atlanan kadar ciddi: `и` yerine `ш`
+  // yazmak bu uygulamanın ayırt etmesi gereken hatanın ta kendisi.
+  if (r.extraSection) {
+    const where =
+      r.weakestAt < 0.34 ? 'başına' : r.weakestAt > 0.66 ? 'sonuna' : 'ortasına';
+    return {
+      title: 'Fazladan yazdın',
+      detail: `${cap(noun)}in ${where} olmaması gereken bir kısım var — mercan bölgeye bak. Tepe/kuyruk sayısını kontrol et.`,
     };
   }
   if (r.score >= 0.85) {
