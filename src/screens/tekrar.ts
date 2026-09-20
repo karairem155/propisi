@@ -27,6 +27,7 @@ import { startPlaylist, startSession } from '../srs/session';
 import { art } from '../ui/assets';
 import { mascot } from '../ui/mascot';
 
+import { go } from '../nav';
 const BUCKETS: Record<string, string> = {
   letter: 'harf',
   element: 'eleman',
@@ -82,7 +83,7 @@ export function render(root: HTMLElement): () => void {
         .map((w) => hrefForSubject(w.subject, cards))
         .filter((h): h is string => h !== null);
       const firstWeak = startPlaylist('Zayıf noktalar', items, '#/ozet');
-      if (firstWeak) location.hash = firstWeak;
+      if (firstWeak) go(firstWeak);
     });
   })();
 

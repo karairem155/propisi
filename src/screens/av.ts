@@ -21,6 +21,7 @@ import { burst, shake } from '../ui/celebrate';
 
 import { cursiveFamily } from '../ui/cursive';
 
+import { go } from '../nav';
 /**
  * Kılavuzla aynı font — seçilebilir (ui/cursive.ts).
  * Modül yüklenirken YAKALAMIYORUZ: ayar değişince eski font kalırdı.
@@ -90,7 +91,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       </button>`;
     huntBox.querySelector('#skip')!.addEventListener('click', () => {
       void nextAfter(target).then((next) => {
-        location.hash = playlistActive() ? next.href : '#/';
+        go(playlistActive() ? next.href : '#/');
       });
     });
     return () => {
@@ -264,7 +265,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         <button class="primary" id="go" style="width:100%">${step.label}</button>
       </div>`;
     huntBox.querySelector('#go')!.addEventListener('click', () => {
-      location.hash = nextHash;
+      go(nextHash);
     });
   }
 

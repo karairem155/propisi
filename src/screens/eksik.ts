@@ -20,6 +20,7 @@ import { sfx } from '../audio/sfx';
 import { burst, shake } from '../ui/celebrate';
 import { ensureGuideFont } from '../ui/guide';
 
+import { go } from '../nav';
 type Question = { hidden: number; answer: string; options: string[] };
 
 /**
@@ -178,7 +179,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         <button class="primary" id="go" style="width:100%">${dest.label}</button>
       </div>`;
     quizBox.querySelector('#go')!.addEventListener('click', () => {
-      location.hash = nextHash;
+      go(nextHash);
     });
   }
 

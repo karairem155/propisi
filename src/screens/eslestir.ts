@@ -18,6 +18,7 @@ import { ensureGuideFont } from '../ui/guide';
 import { sfx } from '../audio/sfx';
 import { burst, shake } from '../ui/celebrate';
 
+import { go } from '../nav';
 type Pair = { word: WordItem; done: boolean };
 
 function shuffle<T>(list: T[]): T[] {
@@ -182,7 +183,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       </div>
       <button class="primary on-blue" id="go" style="width:100%">${step.label}</button>`;
     foot.querySelector('#go')!.addEventListener('click', () => {
-      location.hash = nextHash;
+      go(nextHash);
     });
   }
 

@@ -28,6 +28,8 @@ import { getSetting, saveAttempt } from '../db/db';
 import { findWord } from '../data/curriculum';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
 
+import { go } from '../nav';
+import { playWrite, type WriteAnim } from '../ui/write-anim';
 const INK_COLOR = '#14213d';
 const PASS = 0.7;
 
@@ -85,6 +87,32 @@ export function render(root: HTMLElement, subject?: string): () => void {
   let disposed = false;
   let nextHash = '#/ozet';
 
+  /**
+   * Yanlış yazdıysan kalem doğrusunu yazar.
+   *
+   * Dikte'de kılavuz hiç yok; "şurayı atladın" diyen kehribar bölge, el
+   * yazısını bilmeyen birine kelimenin NASIL yazıldığını öğretmiyor. Doğru
+   * yazım zaten arkaya basılıyordu — animasyon yönü ve sırayı da veriyor.
+   * Değerlendirme katmanı animasyonun altında duruyor (underlay).
+   */
+  let anim: WriteAnim | null = null;
+  const stopAnim = () => {
+    anim?.stop();
+    anim = null;
+  };
+  const playAnswer = (underlay: HTMLCanvasElement | null): void => {
+    if (!box) return;
+    stopAnim();
+    anim = playWrite(surface.ctx.live, target, {
+      x: box.x,
+      baseline: box.baseline,
+      fontSize: box.fontSize,
+      family: box.family,
+      underlay,
+      onDone: () => (anim = null),
+    });
+  };
+
   /** Dikte tuvali BOŞ — sadece satır çizgileri. Kılavuz yok, ipucu yok. */
   const redraw = (revealAnswer = false) => {
     drawPaper(surface.ctx.paper, surface.width, surface.height, paper);
@@ -105,7 +133,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
     // değerlendirme katmanı aksi hâlde siliniyor (bkz. calisma.ts, aynı hata).
     if (checked) {
       const again = scoreNow();
-      if (again) surface.ctx.live.drawImage(again.overlay, 0, 0);
+      if (again) {
+        surface.ctx.live.drawImage(again.overlay, 0, 0);
+        // Yüzey kısaldıysa gösterim de yeni ölçüyle kurulmalı.
+        if (anim) playAnswer(again.overlay);
+      }
     }
   };
   surface.setResizeHandler(remeasure);
@@ -189,7 +221,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   checkBtn.addEventListener('click', () => {
     if (checked) {
-      location.hash = nextHash;
+      go(nextHash);
       return;
     }
     if (strokes.length) void grade();
@@ -220,6 +252,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
     // Doğru yazımı el yazısıyla göster (brief 7.5: "yanlışsa doğru yazım gösterilir").
     redraw(true);
     surface.ctx.live.drawImage(result.overlay, 0, 0);
+    if (result.score < PASS) playAnswer(result.overlay);
 
     sfxForScore(result.score, result.score >= PASS);
 
@@ -308,6 +341,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   return () => {
     disposed = true;
+    stopAnim();
     pointer.detach();
     surface.destroy();
   };

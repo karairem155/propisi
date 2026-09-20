@@ -38,6 +38,7 @@ const ICONS: Record<string, string> = {
 const TABS: { tab: string; href: string; icon: string; label: string }[] = [
   { tab: 'review', href: '#/', icon: 'repeat', label: 'Tekrar' },
   { tab: 'path', href: '#/patika', icon: 'path', label: 'Patika' },
+  { tab: 'modules', href: '#/moduller', icon: 'grid', label: 'Modüller' },
   { tab: 'profile', href: '#/profil', icon: 'user', label: 'Profil' },
 ];
 
@@ -45,6 +46,9 @@ const routes: Record<string, Route> = {
   '/': { title: 'Tekrar', tab: 'review', load: async () => (await import('./screens/tekrar')).render },
   '/patika': { title: 'Patika', tab: 'path', load: async () => (await import('./screens/patika')).render },
   '/ozet': { title: 'Oturum özeti', tab: 'review', load: async () => (await import('./screens/ozet')).render },
+
+  // Modüller: patika sırayı dayatıyor, burası seçim veriyor (screens/moduller.ts).
+  '/moduller': { title: 'Modüller', tab: 'modules', load: async () => (await import('./screens/moduller')).render },
   '/profil': { title: 'Profil', tab: 'profile', load: async () => (await import('./screens/profil')).render },
 
   // İlerleme artık sekme değil — Patika şeridinden ve Profil'den açılır.
@@ -61,6 +65,7 @@ const routes: Record<string, Route> = {
   '/dev/mascots': { title: 'Maskot kadrosu', tab: 'profile', load: async () => (await import('./dev/mascots')).render },
   '/dev/baslangic': { title: 'Başlangıç noktaları', tab: 'profile', load: async () => (await import('./dev/baslangic')).render },
   '/dev/yazim': { title: 'Yazım animasyonu', tab: 'profile', load: async () => (await import('./dev/yazim')).render },
+  '/dev/hamle': { title: 'Hamle yolları', tab: 'profile', load: async () => (await import('./dev/hamle')).render },
 };
 
 /** Parametre alan rotalar — tam eşleşme yerine önek eşleşmesi. */
@@ -136,6 +141,12 @@ const prefixRoutes: Route[] = [
     tab: 'path',
     prefix: '/kontrol/',
     load: async () => (await import('./screens/kontrol')).render,
+  },
+  {
+    title: 'Modül',
+    tab: 'modules',
+    prefix: '/moduller/',
+    load: async () => (await import('./screens/moduller')).render,
   },
   {
     title: 'Sınav sonucu',

@@ -25,6 +25,7 @@ import { ensureGuideFont } from '../ui/guide';
 import { sfx } from '../audio/sfx';
 import { burst, shake } from '../ui/celebrate';
 
+import { go } from '../nav';
 type Mode = 'toPrint' | 'toCursive' | 'fromSound';
 
 type Question = {
@@ -208,7 +209,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         <button class="primary" id="go" style="width:100%">${step.label}</button>
       </div>`;
     quizBox.querySelector('#go')!.addEventListener('click', () => {
-      location.hash = nextHash;
+      go(nextHash);
     });
   }
 

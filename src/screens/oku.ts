@@ -20,6 +20,7 @@ import { sfx } from '../audio/sfx';
 import { burst, shake } from '../ui/celebrate';
 import { ensureGuideFont } from '../ui/guide';
 
+import { go } from '../nav';
 function shuffle<T>(list: T[]): T[] {
   const out = [...list];
   for (let i = out.length - 1; i > 0; i--) {
@@ -119,7 +120,7 @@ export function render(root: HTMLElement, id?: string): () => void {
       </div>
       <button class="primary on-blue" id="go" style="width:100%">${dest.label}</button>`;
     foot.querySelector('#go')!.addEventListener('click', () => {
-      location.hash = nextHash;
+      go(nextHash);
     });
   }
 

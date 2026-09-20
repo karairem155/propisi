@@ -5,6 +5,7 @@
 // tekrar ekranından buraya taşındı.
 
 import { ELEMENTS, LEVELS, capitalOf } from './curriculum';
+import { SENTENCES } from './sentences';
 
 export type Label = {
   label: string;
@@ -20,6 +21,11 @@ export function labelOf(subject: string): Label {
 
   const el = ELEMENTS.find((e) => e.id === subject);
   if (el) return { label: el.name, isLetter: false };
+
+  // Cümlenin kimliği `s1`; ham hâliyle ders adında ve tekrar listesinde
+  // "s1 dersi" diye görünüyordu.
+  const sen = SENTENCES.find((x) => x.id === subject);
+  if (sen) return { label: sen.ru, isLetter: true };
 
   const lvl = LEVELS.find((l) => `joins-${l.id}` === subject || `words-${l.id}` === subject);
   if (lvl) {

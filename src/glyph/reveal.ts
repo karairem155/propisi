@@ -34,7 +34,7 @@
 import { startOf } from '../data/starts';
 
 /** Mesafe haritası bu yükseklikte hesaplanıyor; gösterimde ölçekleniyor. */
-const GRID_H = 160;
+export const GRID_H = 160;
 
 export type GlyphReveal = {
   /** Harfin maskesi — alfa kanalında mürekkep. */

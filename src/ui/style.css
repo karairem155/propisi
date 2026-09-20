@@ -594,7 +594,8 @@ nav.tabs {
   bottom: calc(env(safe-area-inset-bottom) + 12px);
   width: min(400px, calc(100% - 24px));
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   gap: 4px;
   background: var(--blue-deep);
   border-radius: 999px;
@@ -2503,4 +2504,118 @@ button,
   font-size: 12px;
   color: var(--muted);
   line-height: 1.3;
+}
+
+/* ── Modüller (serbest seçim) ────────────────────────────────────────────── */
+
+.mod-menu a {
+  align-items: center;
+}
+
+.mod-art {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+
+.mod-meter {
+  display: block;
+  height: 5px;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: rgba(20, 33, 61, 0.1);
+  overflow: hidden;
+}
+
+.mod-meter i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mint);
+}
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.pick-cell {
+  position: relative;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 2px;
+  padding: 12px 8px 10px;
+  min-height: 104px;
+  border-radius: 18px;
+  background: #fff;
+  border: 2px solid rgba(20, 33, 61, 0.08);
+  color: var(--blue);
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(6, 20, 50, 0.08);
+}
+
+.pick-cell:active {
+  transform: translateY(1px);
+}
+
+.pick-art {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.pick-art.cursive {
+  font-size: 34px;
+}
+
+.pick-art.long {
+  font-size: 22px;
+  word-break: break-word;
+}
+
+.pick-cell small {
+  font-size: 11px;
+  color: rgba(20, 33, 61, 0.6);
+  text-align: center;
+  line-height: 1.25;
+}
+
+.pick-foot {
+  margin-top: auto;
+  padding-top: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(20, 33, 61, 0.42);
+}
+
+.pick-flag {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.pick-flag.done {
+  color: var(--mint);
+}
+
+.pick-flag.due {
+  color: var(--amber);
+}
+
+.pick-cell--done {
+  border-color: rgba(53, 199, 154, 0.55);
+}
+
+.pick-cell--due {
+  border-color: rgba(242, 166, 59, 0.6);
 }

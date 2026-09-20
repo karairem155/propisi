@@ -4,8 +4,12 @@
 // diyor. Ders bu yüzden yedi denemelik bir dizi:
 //
 //   Kademe 1 · 3 kez — kılavuz belirgin, üstünden geç
-//   Kademe 2 · 2 kez — kılavuz soluyor
+//   Kademe 2 · 2 kez — kılavuz siliniyor (hayalet)
 //   Kademe 3 · 2 kez — kılavuz YOK, ezberden yaz
+//
+// Kademe 2'nin saydamlığı önce 0.13'tü ve kullanıcının söylediği doğruydu:
+// 0.3 ile arasındaki fark görünmüyordu, iki kademe de "kılavuz var" demekti.
+// 0.06 gerçekten hayalet — şekli hatırlatıyor, üstünden geçilmiyor.
 //
 // Başarısız deneme kademeyi ilerletmiyor, tekrarlanıyor. Asıl öğrenme
 // Kademe 3'te oluyor: kılavuz arkada görünmeden yazmak.
@@ -31,7 +35,9 @@ import {
 import { startOf } from '../data/starts';
 import {
   elementCount,
+  elementLineWidth,
   elementPainter,
+  elementPaths,
   measureElements,
   type ElementBox,
 } from '../ui/elements';
@@ -45,7 +51,8 @@ import { pushResult, examActive, playlistMode } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
 import { sfx, sfxForScore } from '../audio/sfx';
 import { burst, countUp, pop, shake } from '../ui/celebrate';
-import { playWrite, type WriteAnim } from '../ui/write-anim';
+import { playWrite } from '../ui/write-anim';
+import { playPath } from '../ui/path-anim';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
 import {
   CAPITALS,
@@ -62,6 +69,7 @@ import {
 } from '../data/curriculum';
 import { mascot } from '../ui/mascot';
 
+import { go } from '../nav';
 const INK_COLOR = '#14213d';
 /** Bu puanın altı sayılmaz; kademe ilerlemez. */
 const PASS = 0.72;
@@ -83,8 +91,8 @@ const RESUME_MAX_AGE = 24 * 3600_000;
 type Step = { stage: 1 | 2 | 3; need: number; label: string; alpha: number };
 
 const FULL_LESSON: Step[] = [
-  { stage: 1, need: 3, label: 'Kılavuzun üstünden geç', alpha: 0.3 },
-  { stage: 2, need: 2, label: 'Kılavuz soluyor', alpha: 0.13 },
+  { stage: 1, need: 3, label: 'Kılavuzun üstünden geç', alpha: 0.32 },
+  { stage: 2, need: 2, label: 'Kılavuz soluyor — neredeyse yok', alpha: 0.06 },
   { stage: 3, need: 2, label: 'Kılavuz yok — ezberden yaz', alpha: 0 },
 ];
 
@@ -111,8 +119,8 @@ const EXAM_LESSON: Step[] = [
  * kullanıyor.
  */
 const TRACE_LESSON: Step[] = [
-  { stage: 1, need: 2, label: 'Kılavuzun üstünden geç', alpha: 0.3 },
-  { stage: 2, need: 1, label: 'Kılavuz soluyor', alpha: 0.13 },
+  { stage: 1, need: 2, label: 'Kılavuzun üstünden geç', alpha: 0.32 },
+  { stage: 2, need: 1, label: 'Kılavuz soluyor — neredeyse yok', alpha: 0.06 },
 ];
 
 const MEMORY_LESSON: Step[] = [
@@ -375,6 +383,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
   const redraw = (reveal = revealed) => {
     drawPaper(surface.ctx.paper, surface.width, surface.height, paper);
     const alpha = reveal ? Math.max(step().alpha, 0.24) : step().alpha;
+    // Kılavuz hayalete inince işaretler onunla birlikte kaybolmamalı: vurgu
+    // ve başlangıç noktası bilgi, kılavuzun kendisi değil.
+    const hintAlpha = Math.min(1, Math.max(0.42, alpha * 3));
     const paint = painter();
     if (paint && alpha > 0) {
       const ctx = surface.ctx.paper;
@@ -386,12 +397,12 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
       // Vurgu işareti kelimelerde şart — vurgusuz okunan Rusça kelime yanlıştır.
       if (info.word && box && info.stress >= 0) {
-        drawStress(surface.ctx.paper, info.text, box, info.stress, Math.min(1, alpha * 3));
+        drawStress(surface.ctx.paper, info.text, box, info.stress, hintAlpha);
       }
       // İşaret yalnızca kılavuz görünürken; Kademe 3'te ipucu yok.
       // Düzeltmede de gösteriliyor: "buradan başlamalıydın".
       const at = startAt();
-      if (at) drawStartMarker(surface.ctx.paper, at, paper.rowHeight, Math.min(1, alpha * 3));
+      if (at) drawStartMarker(surface.ctx.paper, at, paper.rowHeight, hintAlpha);
     }
     surface.clearCommitted();
     surface.ctx.committed.fillStyle = INK_COLOR;
@@ -403,13 +414,31 @@ export function render(root: HTMLElement, subject?: string): () => void {
   const remeasure = () => {
     box = measureGuide(surface.ctx.paper, info.text, paper, surface.width, surface.height);
     if (info.element) {
-      elBox = measureElements(paper, surface.width, box.baseline, elementCount(target));
+      /**
+       * Kılavuzsuz kademede satır dolusu kopya İMKÂNSIZ bir iş.
+       *
+       * Kılavuzluyken dört kopya ritmi öğretiyor. Kılavuz kalkınca aynı dört
+       * kopya "aralarını da doğru bırak" demeye başlıyordu: puanlama hedefi
+       * dikey bantlara bölüyor (grading/shape.ts), kopya aralığı kayınca bir
+       * bant boş kalıyor ve puan tavanlanıyor. Kontrol noktasında tek deneme
+       * hakkıyla bu geçilmiyordu — kullanıcının bildirdiği hata buydu.
+       * Ezberden istenen şey şeklin kendisi: tek kopya.
+       */
+      const count = step().alpha === 0 ? 1 : elementCount(target);
+      elBox = measureElements(paper, surface.width, box.baseline, count);
     }
     redraw();
     // Değerlendirme ekrandaysa katmanı yeni ölçüye göre yeniden kur.
     if (checked) {
       const again = scoreNow();
-      if (again) surface.ctx.live.drawImage(again.overlay, 0, 0);
+      if (again) {
+        surface.ctx.live.drawImage(again.overlay, 0, 0);
+        // Gösterim sürüyorsa yeni ölçüyle baştan kurulur: yolları eski
+        // kutudan hesaplanmıştı, yüzey kısalınca kılavuzun yanına düşerdi.
+        if (anim) showHow(animLoop, again.overlay);
+      }
+    } else if (anim) {
+      showHow(animLoop);
     }
   };
   surface.setResizeHandler(remeasure);
@@ -430,7 +459,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
     checkBtn.textContent = 'Kontrol et';
     stepLabel.textContent = step().label;
     drawDots();
-    redraw();
+    stopAnim();
+    surface.clearLive();
+    // Kademe değişmiş olabilir: elemanlarda kopya sayısı kademeye bağlı.
+    remeasure();
     syncButtons();
   };
 
@@ -535,31 +567,61 @@ export function render(root: HTMLElement, subject?: string): () => void {
    * yanına: animasyon biterken katman temizleniyor ve yazılmış olan duruyor.
    * Elementlerde yok — onların şekli fontta değil kodda (ui/elements.ts).
    */
-  let anim: WriteAnim | null = null;
+  let anim: { stop: () => void } | null = null;
+  /** Çalışan gösterim döngüsel mi — yeniden ölçümde aynı kiple kuruluyor. */
+  let animLoop = false;
   const stopAnim = () => {
     anim?.stop();
     anim = null;
     showBtn.classList.remove('on');
   };
 
-  if (info.element) {
-    showBtn.remove();
-  } else {
-    showBtn.addEventListener('click', () => {
-      if (anim) return stopAnim();
+  /**
+   * Gösterimi oynat.
+   *
+   * ELEMANLARDA DA VAR. Şekilleri fontta olmadığı için burada düğme hiç
+   * yoktu: kılavuzsuz kademede kullanıcı "nereden başlıyordu, hangi yöne
+   * gidiyordu" diye soramıyordu (ui/path-anim.ts bu boşluk için yazıldı).
+   *
+   * `underlay` değerlendirme katmanı: hata sonrası gösterimde kehribar/mercan
+   * bölgeler animasyonun altında durmaya devam ediyor.
+   */
+  const showHow = (loop: boolean, underlay: HTMLCanvasElement | null = null): void => {
+    stopAnim();
+    animLoop = loop;
+    const done = () => {
+      anim = null;
+      showBtn.classList.remove('on');
+    };
+    if (info.element) {
+      if (!elBox) return;
+      anim = playPath(surface.ctx.live, elementPaths(target, elBox), {
+        lineWidth: elementLineWidth(elBox),
+        loop,
+        underlay,
+        onDone: done,
+      });
+    } else {
       if (!box) return;
-      showBtn.classList.add('on');
-      peeked = true;
       anim = playWrite(surface.ctx.live, info.text, {
         x: box.x,
         baseline: box.baseline,
         fontSize: box.fontSize,
         family: box.family,
-        loop: true,
+        loop,
+        underlay,
+        onDone: done,
       });
-      if (!anim) stopAnim();
-    });
-  }
+    }
+    if (anim) showBtn.classList.add('on');
+  };
+
+  showBtn.addEventListener('click', () => {
+    if (anim) return stopAnim();
+    peeked = true;
+    // Deneme değerlendirildiyse geri bildirim katmanı gösterimin altında kalır.
+    showHow(true, checked ? (scoreNow()?.overlay ?? null) : null);
+  });
 
   if (info.element) {
     sayBtn.remove();
@@ -591,7 +653,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
   checkBtn.addEventListener('click', () => {
     if (finished) {
-      location.hash = nextHash;
+      go(nextHash);
       return;
     }
     if (checked) {
@@ -680,6 +742,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
     revealed = (!passed && step().alpha === 0) || exam;
     redraw();
     surface.ctx.live.drawImage(result.overlay, 0, 0);
+
+    // Bilemediyse YÖNÜ göster. "Şurayı atladın" tek başına öğretmiyor;
+    // kalemin nereden başlayıp nereye gittiğini görmek gerekiyor. Bir kez
+    // oynar, değerlendirme katmanı altında durur, sonra ekran ona döner.
+    if (!passed) showHow(false, result.overlay);
 
     if (passed) {
       passedInStep++;

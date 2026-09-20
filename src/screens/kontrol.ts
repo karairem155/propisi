@@ -27,6 +27,7 @@ import { mascot } from '../ui/mascot';
 import { sfx } from '../audio/sfx';
 import { burst, countUp, pop } from '../ui/celebrate';
 
+import { go } from '../nav';
 /** Geçme eşiği — ortalama. Ders eşiği 0.72; sınav biraz daha yukarıda. */
 const PASS_AVERAGE = 0.75;
 /** Tek bir adım bunun altındaysa ortalama kurtarsa bile geçilmez. */
@@ -243,7 +244,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         `#/kontrol-sonuc/${encodeURIComponent(target)}`,
         { exam: true, labels: exam.steps.map((s) => s.kind) },
       );
-      if (first) location.hash = first;
+      if (first) go(first);
     });
   })();
 

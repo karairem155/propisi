@@ -7,7 +7,10 @@
 // biri aceleye gelir öbürü sürünür. Uzun harf uzun sürüyor, tıpkı elde olduğu
 // gibi.
 
-import { glyphReveal, penAt, revealMask } from '../glyph/reveal';
+import { glyphReveal, penAt, revealMask, type GlyphReveal } from '../glyph/reveal';
+import { ORDER_MAX, pathOrder, routeStrokes } from '../glyph/route';
+import { hamleOf } from '../data/hamle';
+import { drawArrow } from './arrow';
 
 export type WriteAnimOptions = {
   /** Metnin sol kenarı ve taban çizgisi — kılavuzla aynı yer. */
@@ -19,6 +22,8 @@ export type WriteAnimOptions = {
   speed?: number;
   /** Bitince baştan alsın mı. */
   loop?: boolean;
+  /** Animasyonun ALTINA her karede basılacak katman (ör. değerlendirme). */
+  underlay?: HTMLCanvasElement | null;
   /** Her tur bittiğinde. */
   onDone?: () => void;
 };
@@ -33,24 +38,48 @@ const PEN = '#35c79a';
  * Animasyonu `ctx` üzerine oynatır. Her karede kendi alanını temizler, yani
  * üzerine çizdiği katman animasyona ayrılmış olmalı (canlı katman).
  */
+/**
+ * Harfin zaman haritası — hamle verisi varsa ondan, yoksa jeodezik açılımdan.
+ *
+ * Jeodezik açılım tek şeritli harflerde iyi ama çatallanınca iki yeri aynı
+ * anda yazıyor (kullanıcının gördüğü hata). data/hamle.ts olan harflerde
+ * sıra gerçek yazma sırası; şekil yine fonttan geliyor.
+ */
+const orderCache = new Map<string, Uint16Array | null>();
+
+function sirali(r: GlyphReveal, text: string, family: string): GlyphReveal {
+  if (text.length !== 1) return r;
+  const key = `${text}|${family}`;
+  let order = orderCache.get(key);
+  if (order === undefined) {
+    const yol = hamleOf(text);
+    const paths = yol ? routeStrokes(r, yol, family) : [];
+    order = paths.length ? pathOrder(r, paths) : null;
+    orderCache.set(key, order);
+  }
+  return order ? { ...r, dist: order, maxDist: ORDER_MAX } : r;
+}
+
 export function playWrite(
   ctx: CanvasRenderingContext2D,
   text: string,
   opts: WriteAnimOptions,
 ): WriteAnim | null {
-  const r = glyphReveal(text, opts.fontSize, opts.family);
-  if (!r) return null;
+  const raw = glyphReveal(text, opts.fontSize, opts.family);
+  if (!raw) return null;
+  const r = sirali(raw, text, opts.family);
 
   const scratch = document.createElement('canvas');
-  // Tuval pikseli cinsinden yol uzunluğu ≈ en uzak mesafe (BFS'te 10 = 1px).
-  const pathPx = (r.maxDist / 10) * r.scale;
+  // Tuval pikseli cinsinden yol uzunluğu. Jeodezik haritada birim 10 = 1px;
+  // hamle haritasında 0..ORDER_MAX, o yüzden harfin kendi boyundan tahmin.
+  const pathPx =
+    r.maxDist === ORDER_MAX ? opts.fontSize * 2.6 : (r.maxDist / 10) * r.scale;
   const speed = opts.speed ?? 190;
   const duration = Math.max(700, (pathPx / speed) * 1000);
   /** Bitince harf bir an tam görünsün — göz sonucu yakalasın. */
   const HOLD = 520;
 
-  const w = ctx.canvas.width;
-  const h = ctx.canvas.height;
+  const size = () => [ctx.canvas.width, ctx.canvas.height] as const;
   const dx = opts.x - r.offX * r.scale;
   const dy = opts.baseline - r.offY * r.scale;
   const dw = r.w * r.scale;
@@ -66,7 +95,11 @@ export function playWrite(
     const elapsed = now - start;
     const t = Math.min(1, elapsed / duration);
 
-    ctx.clearRect(0, 0, w, h);
+    {
+      const [w, h] = size();
+      ctx.clearRect(0, 0, w, h);
+    }
+    if (opts.underlay) ctx.drawImage(opts.underlay, 0, 0);
 
     // Hayalet: nereye gideceğini görmek, nereden geldiğini görmek kadar önemli.
     ctx.save();
@@ -80,16 +113,24 @@ export function playWrite(
     // Yazılmış kısım.
     ctx.drawImage(revealMask(r, t, scratch), dx, dy, dw, dh);
 
-    // Kalem ucu — yalnız yazarken, bitişte kaldırılıyor.
+    // Kalem ucu — yalnız yazarken, bitişte kaldırılıyor. Nokta değil OK:
+    // kullanıcının gönderdiği propisi tablosunda yön oklarla gösteriliyor.
     if (t < 1) {
       const p = penAt(r, t);
+      const back = penAt(r, Math.max(0, t - 0.03));
       if (p) {
-        ctx.save();
-        ctx.fillStyle = PEN;
-        ctx.beginPath();
-        ctx.arc(opts.x + p.x, opts.baseline + p.y, Math.max(5, opts.fontSize * 0.055), 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        const at = { x: opts.x + p.x, y: opts.baseline + p.y };
+        const from = back ? { x: opts.x + back.x, y: opts.baseline + back.y } : null;
+        const size = Math.max(5, opts.fontSize * 0.055);
+        if (from) drawArrow(ctx, from, at, size * 1.5, PEN);
+        else {
+          ctx.save();
+          ctx.fillStyle = PEN;
+          ctx.beginPath();
+          ctx.arc(at.x, at.y, size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
       }
     }
 
@@ -102,7 +143,11 @@ export function playWrite(
       raf = requestAnimationFrame(frame);
       return;
     }
-    ctx.clearRect(0, 0, w, h);
+    {
+      const [w, h] = size();
+      ctx.clearRect(0, 0, w, h);
+    }
+    if (opts.underlay) ctx.drawImage(opts.underlay, 0, 0);
     opts.onDone?.();
   };
 
@@ -112,7 +157,9 @@ export function playWrite(
     stop() {
       stopped = true;
       if (raf) cancelAnimationFrame(raf);
+      const [w, h] = size();
       ctx.clearRect(0, 0, w, h);
+      if (opts.underlay) ctx.drawImage(opts.underlay, 0, 0);
     },
   };
 }

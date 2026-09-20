@@ -22,6 +22,7 @@ import { sfx } from '../audio/sfx';
 import { burst, shake } from '../ui/celebrate';
 import { ensureGuideFont } from '../ui/guide';
 
+import { go } from '../nav';
 /** Kelimenin harflerinden türeyen çeldiriciler. */
 function decoys(word: string, count: number): string[] {
   const own = new Set([...word]);
@@ -199,7 +200,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       </div>
       <button class="primary on-blue" id="go" style="width:100%">${dest.label}</button>`;
     foot.querySelector('#go')!.addEventListener('click', () => {
-      location.hash = nextHash;
+      go(nextHash);
     });
     nextHash = dest.href;
   }

@@ -34,6 +34,7 @@ import { getSetting, saveAttempt } from '../db/db';
 import { mascot } from '../ui/mascot';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
 
+import { go } from '../nav';
 const INK_COLOR = '#14213d';
 const PASS = 0.7;
 /** Cümlede kılavuz soluk ama var: buradaki ders akış, ezber değil. */
@@ -263,7 +264,7 @@ export function render(root: HTMLElement, id?: string): () => void {
 
   checkBtn.addEventListener('click', () => {
     if (finished) {
-      location.hash = nextHash;
+      go(nextHash);
       return;
     }
     if (checked) {
@@ -296,6 +297,22 @@ export function render(root: HTMLElement, id?: string): () => void {
     surface.ctx.live.drawImage(result.overlay, 0, 0);
 
     const passed = result.score >= PASS;
+    // Bilemediyse kalem o kelimeyi yazsın — yön ve sıra ancak böyle görünüyor.
+    if (!passed && box) {
+      stopAnim();
+      anim = playWrite(surface.ctx.live, word(), {
+        x: box.x,
+        baseline: box.baseline,
+        fontSize: box.fontSize,
+        family: box.family,
+        underlay: result.overlay,
+        onDone: () => {
+          anim = null;
+          showBtn.classList.remove('on');
+        },
+      });
+      if (anim) showBtn.classList.add('on');
+    }
     scores.push(result.score);
     sfxForScore(result.score, passed);
 
