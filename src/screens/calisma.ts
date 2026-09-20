@@ -576,6 +576,22 @@ export function render(root: HTMLElement, subject?: string): () => void {
         ? Math.hypot(firstPoint.x - at.x, firstPoint.y - at.y) > paper.rowHeight * 0.45
         : false;
 
+    /**
+     * Başlangıç noktası denemeyi DÜŞÜREBİLİR Mİ?
+     *
+     * İki durumda hayır, ikisi de adaletle ilgili:
+     *
+     *   1. Yeşil nokta EKRANDA YOKKEN (kılavuzsuz kademe, sınav) yanlış
+     *      yerden başlamak "gösterilmeyen kuralı çiğnemek" oluyordu. Sınav
+     *      ekranı "Yanlış yerden başladın" diyordu ama doğru yeri hiç
+     *      göstermemişti.
+     *   2. Kaynağından EMİN OLMADIĞIM harflerde (data/starts.ts → sure:false,
+     *      33 harfin 14'ü). Doğrulanmamış pedagojiyle kimseyi düşürmem.
+     *
+     * Her iki durumda da geri bildirim veriliyor: bilgi değerli, ceza değil.
+     */
+    const startBlocks = startOff && step().alpha > 0 && start?.sure === true;
+
     const checks = failedChecks(result);
     if (startOff) checks.unshift('start');
 
@@ -584,7 +600,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
     const lifted = info.join && strokes.length > 1;
     if (lifted) checks.unshift('lift');
 
-    const passed = result.score >= PASS && !startOff && !lifted;
+    const passed = result.score >= PASS && !startBlocks && !lifted;
     scores.push(result.score);
 
     // Kılavuz görünmüyorken hata yapıldıysa doğru şekli arkaya koy. Sınavda
@@ -623,7 +639,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
           <b>${
             lifted
               ? 'Kalem kalktı'
-              : startOff && !result.missedSection
+              : startBlocks && !result.missedSection
                 ? 'Yanlış yerden başladın'
                 : msg.title
           }</b>
@@ -632,9 +648,13 @@ export function render(root: HTMLElement, subject?: string): () => void {
         <p class="fine" style="margin:4px 0 12px">${
           lifted
             ? `${strokes.length} hamlede yazdın. Bağlantıda iki harf <b>tek hamlede</b>, kalem kaldırmadan yazılır — asıl öğrenilen şey bu.`
-            : startOff
+            : startBlocks
               ? `Yeşil noktadan başlamalısın${start?.note ? ` — ${start.note.toLocaleLowerCase('tr')}` : ''}. ${msg.detail}`
-              : msg.detail
+              : startOff
+                ? `${msg.detail}<br><span class="fine">Başlangıç noktan kaymış${
+                    start?.note ? ` — ${start.note.toLocaleLowerCase('tr')}` : ''
+                  }. Bu deneme için not kırılmadı.</span>`
+                : msg.detail
         }</p>
         <div class="bar-row">
           <span class="bar-name">İsabet</span>
