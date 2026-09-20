@@ -78,15 +78,75 @@ erişilebilirlik sorunudur, süs değil.
 
 ### Değerlendirme
 
-Şekil örtüşmesi (`src/grading/shape.ts`) — glyph verisi gerektirmiyor, harfin
-şekli fonttan geliyor. İki ölçü: **isabet** (mürekkebin harf üstünde kalan
-oranı) ve **kapsama** (harfin geçilen oranı). Tek başına ikisi de kandırılabilir.
+Şekil örtüşmesi (`src/grading/shape.ts`) — harfin şekli fonttan geliyor.
+İki temel ölçü: **isabet** (mürekkebin harf üstünde kalan oranı) ve
+**kapsama** (harfin geçilen oranı). Tek başına ikisi de kandırılabilir.
 
-Buna **bant kapsaması** eklendi: harf dokuz dikey banda bölünüp her bandın
-kapsaması ayrı ölçülüyor. Nedeni ölçümle bulundu — yalnız toplam kapsamaya
-bakınca `ш` yerine iki tepe çizmek 92 "Çok iyi" alıyordu; uygulamanın ayırt
-etmesi gereken en önemli hata gözden kaçıyordu. Bantla 45'e düştü, doğru çizim
-94'te kaldı.
+Buna **bant analizi** eklendi ve İKİ YÖNDE de çalışıyor — harf dokuz dikey
+banda bölünüp her bandın durumu ayrı ölçülüyor:
+
+| yön | ne yakalar | örnek |
+|---|---|---|
+| hedef → kullanıcı | **eksik** bölüm | `ш` istenirken `и` yazmak |
+| kullanıcı → hedef | **fazla** bölüm | `и` istenirken `ş` yazmak |
+
+İkisi de ölçümle bulundu. Önce yalnız toplam kapsamaya bakılıyordu ve `ш`
+yerine iki tepe çizmek 92 alıyordu. Bant eklendikten sonra o yön düzeldi ama
+TERSİ açık kaldı: `и` istenirken `ш` yazmak 87, `о` istenirken `а` yazmak 92
+— ikisi de geçer not. Oysa и/ш ayrımı iki yönde de bu uygulamanın var oluş
+sebebi. Simetrik bant analiziyle ikisi de 45'e indi.
+
+**Boyut ayrı bir hata türü.** Fazla-bölüm denetimi önce boyut hatasını da
+"fazladan yazdın" sayıyordu. Ayırt edici sinyal yükseklik: aynı harfi büyük
+yazmak eni de boyu da büyütür, başka (geniş) bir harf yazmak yalnız eni.
+Oranlar birlikte hareket ediyorsa boyut hatası — daha yumuşak cezalandırılıyor
+(72 tavan), çünkü şekil doğru, ölçek kaymış.
+
+Ölçülmüş davranış:
+
+```
+doğru yazım                     100        %10 boyut farkı       97
+kelime %18 büyük            72 BOYUT       6px kayma            100
+и←ш (fazla tepe)            45 FAZLA       tek harf ±%25 boyut  100
+о←а (fazla kuyruk)          45 FAZLA       eğim +0.12           100
+ш←и (eksik tepe)            45 EKSİK
+```
+
+### Birleşik yazı — безотрывное письмо
+
+Rus el yazısının asıl kuralı harflerin BİRLEŞMESİ. Üç yerde denetleniyor:
+
+- **Font birleştiriyor mu** — `мама`, `шишка`, `лишишь` basılıp karşılaştırıldı.
+  Marck Script birleştiriyor, Bad Script ayrı basıyor. Seçim ekranında yazıyor.
+- **Bağlantı türü** — önceki harf gövde üstünde bitiyorsa (`о б в ъ ы ь`)
+  **üst bağlantı**, değilse **alt bağlantı**. Mekanik kural, tahmin değil;
+  ders ekranında hangi türü çalıştığın yazıyor.
+- **Kelimede kalem kaldırma** — kelime tek hamlede yazılır; istisna gövdesinden
+  ayrı işareti olan harfler (`й` +1, `ё` +2). Kılavuz kalkınca kural işliyor.
+
+### El yazısı fontu seçilebilir
+
+Bu font tipografi değil: kılavuzun şekli, değerlendirmenin hedefi ve yazım
+animasyonu hep buradan çıkıyor. Yanlış font yanlış harf öğretir.
+
+Kullanıcı uyardı, ölçüldü ve doğrulandı: Bad Script'te `б в г д ж к т ф`
+matbu biçimin italiği ve harfler hiç birleşmiyor. Varsayılan **Marck Script**
+oldu (OFL, kendi sunucumuzda). Ama hiçbir açık lisanslı font doğrulanmış
+школьная пропись değil, o yüzden seçim **Profil → El yazısı fontu**'nda.
+
+Gerçek okul propisi fontu (ParaType «Прописи») ticari; satın alınırsa
+`src/ui/fonts/` içine konup `ui/cursive.ts` listesine bir satır eklemek yeterli.
+
+### Yazım animasyonu
+
+Harfin nasıl yazıldığını kalemle gösteriyor (`✎` düğmesi). Kaynağı fontun
+kendisi: başlangıç noktasından mürekkebin İÇİNDEN yayılan mesafe
+(`src/glyph/reveal.ts`). İskelet çıkarmayı denedim ve bıraktım — yürüyüş
+`ш`yi üç parçaya bölüyordu ve hamle sırası geometriden çıkan bir tahmin
+olurdu. Jeodezik açılım kurgu gereği doğru: kavşak, dallanma, sıra tahmini yok.
+
+Animasyon DEĞERLENDİRMEYE katılmıyor. Denetim: `#/dev/yazim` — 33 küçük +
+30 büyük harf, başlangıç noktası doğrulanmamış olanlar kırmızı çerçeveli.
 
 **Ölçek bilerek normalize edilmiyor.** Brief 6.1 uyarıyor: Procrustes ölçek
 normalizasyonu iki tepeli `и`yi üç tepeli `ш`ya mükemmel uyduruyor. Konum
