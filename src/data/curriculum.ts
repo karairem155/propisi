@@ -225,6 +225,41 @@ export function wordsWith(ch: string): string[] {
   return ALL_WORDS.filter((w) => w.includes(ch));
 }
 
+/**
+ * BÜYÜK HARF DERSLERİ.
+ *
+ * NEDEN VAR: cümle alıştırması eklenince ortaya bir tutarsızlık çıktı —
+ * "Кот спит на окне." büyük К ile başlıyor ama müfredat yalnız küçük harf
+ * öğretiyordu. Kullanıcıya hiç görmediği bir şekli yazdırmak oluyordu.
+ *
+ * Rus el yazısında büyük harf küçüğünün büyütülmüşü DEĞİL: К, Ж, Э gibi
+ * harflerin büyük biçimi ayrı bir şekil ve ayrı bir hamle dizisi. Bu yüzden
+ * kendi dersleri var, harflerin arkasına iliştirilmiş değil.
+ *
+ * Her seviye, o seviyenin harflerinden CÜMLE BAŞI OLABİLECEK olanların
+ * büyüğünü öğretiyor — otuz üç büyük harfin hepsini yüklemek gereksiz;
+ * cümlede kullanılmayanı öğretmek boş tekrar.
+ */
+export const CAPITALS: Record<string, string[]> = {
+  g1: ['П', 'Т'],
+  g2: ['М', 'Я'],
+  g3: ['У'],
+  g4: ['О', 'С', 'Е', 'А', 'Д', 'Б'],
+  g5: ['В', 'Ы'],
+  g6: ['К', 'Н', 'Ю'],
+  g7: ['З', 'Э', 'Ж', 'Х'],
+};
+
+/** `cap:К` biçimindeki konu kimliğinden harfi çıkarır. */
+export function capitalOf(subject: string): string | null {
+  return subject.startsWith('cap:') ? (subject.slice(4) || null) : null;
+}
+
+/** Büyük harfin hangi seviyede öğretildiği. */
+export function levelOfCapital(ch: string): string | undefined {
+  return Object.keys(CAPITALS).find((id) => CAPITALS[id]!.includes(ch));
+}
+
 /** Bir harf çiftinin hangi seviyede öğretildiği. */
 export function findJoin(pair: string): { pair: string; level: Level } | undefined {
   for (const level of LEVELS) {

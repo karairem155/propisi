@@ -19,7 +19,7 @@
 // yönlendirir — araya bir "başla" ekranı koymak fazladan dokunuş olurdu.
 
 import { CONFUSABLES } from '../data/confusables';
-import { ELEMENTS, findJoin, findWord, wordsWith } from '../data/curriculum';
+import { ELEMENTS, capitalOf, findJoin, findWord, wordsWith } from '../data/curriculum';
 import { findSentence } from '../data/sentences';
 import { labelOf } from '../data/labels';
 import { startPlaylist } from '../srs/session';
@@ -32,6 +32,14 @@ function stepsFor(subject: string): Step[] {
   // Cümle kendi ekranında zaten kelime kelime ilerliyor; bölmeye gerek yok.
   if (findSentence(subject)) {
     return [{ href: `#/cumle/${enc}`, label: 'Cümle' }];
+  }
+
+  // Büyük harf: tanıma ve harf avı küçük harf için kurulu, büyüğe uymuyor.
+  if (capitalOf(subject)) {
+    return [
+      { href: `#/calis/${enc}`, label: 'Büyük harf', mode: 'trace' },
+      { href: `#/calis/${enc}`, label: 'Ezberden', mode: 'memory' },
+    ];
   }
 
   if (ELEMENTS.some((e) => e.id === subject)) {

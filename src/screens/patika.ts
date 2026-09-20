@@ -7,7 +7,7 @@
 // geciktirdiyse düğüm yeşil kalmaz, KEHRİBAR olur (`fading`). Patika hem ilerlemeyi
 // hem unutmayı gösterir.
 
-import { ELEMENTS, LEVELS } from '../data/curriculum';
+import { CAPITALS, ELEMENTS, LEVELS } from '../data/curriculum';
 import { SENTENCES } from '../data/sentences';
 import { lessonHref, lessonSteps } from './ders';
 import { allCards, progressBySubject } from '../srs/scheduler';
@@ -18,7 +18,7 @@ import { gridHtml } from './alfabe';
 type NodeState = 'locked' | 'current' | 'done' | 'fading';
 
 type PathNode = {
-  kind: 'element' | 'letter' | 'join' | 'word' | 'sentence' | 'checkpoint';
+  kind: 'element' | 'letter' | 'capital' | 'join' | 'word' | 'sentence' | 'checkpoint';
   /** Çalışma ekranına geçerken kullanılan kimlik. */
   subject?: string;
   art: string;
@@ -126,6 +126,7 @@ export function render(root: HTMLElement): () => void {
                 },
               ]
             : []),
+          ...capitalNodes(level.id, stateOf),
           ...(level.words.length
             ? [
                 {
@@ -317,6 +318,32 @@ function sentenceNodes(
       label: 'Cümle',
       sub: own.map((x) => x.ru).join(' · '),
       ...stateOf(first.id),
+    },
+  ];
+}
+
+/**
+ * Seviyenin büyük harf dersi.
+ *
+ * Bağlantıdan SONRA, kelimeden ÖNCE: büyük harf tek başına duran bir şekil,
+ * bağlantı kuralı onun için geçerli değil; ama kelime ve cümle ona ihtiyaç
+ * duyuyor. Düğüm ilk büyük harfe gidiyor, ders o seviyenin hepsini açıyor.
+ */
+function capitalNodes(
+  levelId: string,
+  stateOf: (subject: string) => { state: NodeState; due?: number },
+): PathNode[] {
+  const caps = CAPITALS[levelId] ?? [];
+  const first = caps[0];
+  if (!first) return [];
+  return [
+    {
+      kind: 'capital',
+      subject: `cap:${first}`,
+      art: first,
+      label: 'Büyük harf',
+      sub: caps.join(' · '),
+      ...stateOf(`cap:${first}`),
     },
   ];
 }

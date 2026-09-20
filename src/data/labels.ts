@@ -4,7 +4,7 @@
 // fontuyla basılınca kırık görünüyordu. Üç ekran aynı dönüşümü istediği için
 // tekrar ekranından buraya taşındı.
 
-import { ELEMENTS, LEVELS } from './curriculum';
+import { ELEMENTS, LEVELS, capitalOf } from './curriculum';
 
 export type Label = {
   label: string;
@@ -14,6 +14,9 @@ export type Label = {
 
 export function labelOf(subject: string): Label {
   if (subject.length === 1) return { label: subject, isLetter: true };
+
+  const cap = capitalOf(subject);
+  if (cap) return { label: cap, isLetter: true };
 
   const el = ELEMENTS.find((e) => e.id === subject);
   if (el) return { label: el.name, isLetter: false };

@@ -46,7 +46,16 @@ import { speak, speechStatus } from '../audio/speech';
 import { sfx, sfxForScore } from '../audio/sfx';
 import { burst, countUp, pop, shake } from '../ui/celebrate';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
-import { ELEMENTS, LEVELS, findJoin, findWord, levelOfLetter } from '../data/curriculum';
+import {
+  CAPITALS,
+  ELEMENTS,
+  LEVELS,
+  capitalOf,
+  findJoin,
+  findWord,
+  levelOfCapital,
+  levelOfLetter,
+} from '../data/curriculum';
 import { mascot } from '../ui/mascot';
 
 const INK_COLOR = '#14213d';
@@ -108,6 +117,12 @@ const MEMORY_LESSON: Step[] = [
 
 type Info = {
   title: string;
+  /**
+   * Tuvale ÇİZİLECEK metin. Konu kimliği her zaman metin değil: büyük harf
+   * dersinin konusu `cap:К`, çizilecek şey ise `К`. Kılavuz, değerlendirme
+   * hedefi ve başlangıç noktası hep bunu kullanıyor.
+   */
+  text: string;
   sub: string;
   say: string;
   element: boolean;
@@ -120,10 +135,25 @@ type Info = {
 
 /** Ekranda gösterilecek başlık, seslendirilecek metin ve tür. */
 function describe(subject: string): Info {
+  const cap = capitalOf(subject);
+  if (cap) {
+    return {
+      title: cap,
+      text: cap,
+      sub: `Büyük ${cap.toLocaleLowerCase('ru')} — küçüğünün büyütülmüşü değil`,
+      say: cap.toLocaleLowerCase('ru'),
+      element: false,
+      word: false,
+      join: false,
+      stress: -1,
+    };
+  }
+
   const el = ELEMENTS.find((e) => e.id === subject);
   if (el) {
     return {
       title: el.name,
+      text: subject,
       sub: el.ru,
       say: '',
       element: true,
@@ -137,6 +167,7 @@ function describe(subject: string): Info {
   if (j) {
     return {
       title: subject,
+      text: subject,
       sub: 'Kalem kaldırmadan yaz',
       say: subject,
       element: false,
@@ -149,6 +180,7 @@ function describe(subject: string): Info {
   if (w) {
     return {
       title: w.word.ru,
+      text: w.word.ru,
       sub: w.word.tr,
       say: w.word.ru,
       element: false,
@@ -163,6 +195,7 @@ function describe(subject: string): Info {
     if (l) {
       return {
         title: l.ch,
+        text: l.ch,
         sub: l.hint ?? lvl.ru,
         say: l.say ?? l.ch,
         element: false,
@@ -174,6 +207,7 @@ function describe(subject: string): Info {
   }
   return {
     title: subject,
+    text: subject,
     sub: '',
     say: subject,
     element: false,
@@ -281,17 +315,17 @@ export function render(root: HTMLElement, subject?: string): () => void {
   const passedTotal = () =>
     LESSON.slice(0, stepIndex).reduce((n, s) => n + s.need, 0) + passedInStep;
 
-  const start = info.element ? undefined : startOf(target[0] ?? target);
+  const start = info.element ? undefined : startOf(info.text[0] ?? info.text);
   const startAt = (): { x: number; y: number } | null => {
     if (!start || !box) return null;
     // Kelimede nokta ilk harfe göre konumlanır, kelimenin tamamına göre değil.
-    const span = info.word ? firstCharWidth(surface.ctx.paper, target, box) : box.width;
+    const span = info.word ? firstCharWidth(surface.ctx.paper, info.text, box) : box.width;
     return startPointOf(box, start, paper.rowHeight, span);
   };
 
   const painter = (): ((ctx: CanvasRenderingContext2D) => void) | null => {
     if (info.element) return elBox ? elementPainter(target, elBox) : null;
-    return box ? targetPainter(target, box) : null;
+    return box ? targetPainter(info.text, box) : null;
   };
 
   const drawDots = () => {
@@ -327,7 +361,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
       // Vurgu işareti kelimelerde şart — vurgusuz okunan Rusça kelime yanlıştır.
       if (info.word && box && info.stress >= 0) {
-        drawStress(surface.ctx.paper, target, box, info.stress, Math.min(1, alpha * 3));
+        drawStress(surface.ctx.paper, info.text, box, info.stress, Math.min(1, alpha * 3));
       }
       // İşaret yalnızca kılavuz görünürken; Kademe 3'te ipucu yok.
       // Düzeltmede de gösteriliyor: "buradan başlamalıydın".
@@ -342,7 +376,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
   };
 
   const remeasure = () => {
-    box = measureGuide(surface.ctx.paper, target, paper, surface.width, surface.height);
+    box = measureGuide(surface.ctx.paper, info.text, paper, surface.width, surface.height);
     if (info.element) {
       elBox = measureElements(paper, surface.width, box.baseline, elementCount(target));
     }
@@ -662,7 +696,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
     const cardId = info.join
       ? `join:${target}`
-      : `${kindOf(target)}:${target}:write`;
+      : kindOf(target) === 'capital'
+        ? `capital:${target}`
+        : `${kindOf(target)}:${target}:write`;
     await review(cardId, ratingOf(average), lastChecks);
     await recordReview();
     pushResult({
@@ -735,7 +771,8 @@ export function render(root: HTMLElement, subject?: string): () => void {
   };
 }
 
-function kindOf(subject: string): 'letter' | 'element' | 'word' | 'join' {
+function kindOf(subject: string): 'letter' | 'element' | 'word' | 'join' | 'capital' {
+  if (capitalOf(subject)) return 'capital';
   if (ELEMENTS.some((e) => e.id === subject)) return 'element';
   if (findJoin(subject)) return 'join';
   return findWord(subject) ? 'word' : 'letter';
@@ -746,6 +783,16 @@ function kindOf(subject: string): 'letter' | 'element' | 'word' | 'join' {
  * açılır — oturum sonra kuyruk üzerinden aralarında dolaşır.
  */
 async function openLesson(subject: string) {
+  const cap = capitalOf(subject);
+  if (cap) {
+    // Seviyenin bütün büyük harfleri açılır; düğüm bir SET açıyor.
+    const levelId = levelOfCapital(cap) ?? 'g1';
+    for (const other of CAPITALS[levelId] ?? []) {
+      if (other !== cap) await ensureCard('capital', `cap:${other}`, levelId);
+    }
+    return ensureCard('capital', subject, levelId);
+  }
+
   const element = ELEMENTS.find((e) => e.id === subject);
   if (element) return ensureCard('element:write', subject, 'elements');
 
