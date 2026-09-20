@@ -4,7 +4,7 @@
 // Artık ayrı sekme değil — patika.ts bu dosyanın gridHtml()'ini kullanıyor.
 // Hücrenin alt bandı ustalık (FSRS stability); kehribar çerçeve tekrar bekliyor demek.
 
-import { ALPHABET, ELEMENTS, LEVELS, levelOfLetter } from '../data/curriculum';
+import { ALPHABET, ELEMENTS, LEVELS, hasCapital, levelOfLetter } from '../data/curriculum';
 import { mastery } from '../srs/cards';
 import { progressBySubject } from '../srs/scheduler';
 import { mascot, type MascotName } from '../ui/mascot';
@@ -41,9 +41,15 @@ export function gridHtml(progress: Progress): string {
       if (!seen) cls.push('letter-cell--locked');
       if (due > 0) cls.push('letter-cell--due');
 
-      return `<div class="${cls.join(' ')}" title="${ch} · ${level?.tag ?? 'grupsuz'}">
+      // Alfabe bir BAŞVURU ekranı: harfin iki biçimi de görünmeli. Yalnız
+      // küçüğünü göstermek "bu harf tek biçimli" demek oluyordu. Ъ, Ы, Ь'de
+      // büyük biçim yok — hiçbir Rusça kelime onlarla başlamıyor.
+      const up = hasCapital(ch) ? ch.toLocaleUpperCase('ru') : '';
+      const capSeen = up ? (progress.get(`cap:${up}`)?.seen ?? false) : false;
+
+      return `<div class="${cls.join(' ')}" title="${up}${ch} · ${level?.tag ?? 'grupsuz'}">
         <small>${level ? level.tag.replace('Seviye ', 'S') : '–'}</small>
-        <span>${ch}</span>
+        <span class="letter-pair"><b class="${capSeen ? '' : 'dim'}">${up || '·'}</b>${ch}</span>
         ${seen ? `<i style="height:${Math.round(m * 100)}%"></i>` : ''}
       </div>`;
     };
@@ -69,7 +75,7 @@ export function gridHtml(progress: Progress): string {
         </div>
       </div>
 
-      ${sectionHead('Harfler', 'буквы', 'cubuk', `${ALPHABET.length} harf`)}
+      ${sectionHead('Harfler', 'буквы', 'cubuk', `${ALPHABET.length} küçük · 30 büyük`)}
       <div class="letter-grid">
         ${ALPHABET.map(cell).join('')}
       </div>

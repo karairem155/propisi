@@ -8,7 +8,7 @@
 // Kırmızı çerçeveli harfler: başlangıç noktası doğrulanmamış (starts.ts →
 // sure:false). Açılımın YÖNÜ o noktadan çıktığı için en şüpheli olanlar onlar.
 
-import { ALPHABET } from '../data/curriculum';
+import { ALPHABET, hasCapital } from '../data/curriculum';
 import { startOf } from '../data/starts';
 import { ensureGuideFont } from '../ui/guide';
 import { drawWriteFrame } from '../ui/write-anim';
@@ -29,6 +29,8 @@ export function render(root: HTMLElement): () => void {
     if (disposed) return;
 
     const unsure = ALPHABET.filter((ch) => startOf(ch)?.sure === false);
+    // Büyük harfler de gösteriliyor: küçüğünün büyütülmüşü değil, ayrı şekil.
+    const caps = ALPHABET.filter(hasCapital).map((ch) => ch.toLocaleUpperCase('ru'));
 
     root.innerHTML = `
       <div class="note">
@@ -41,7 +43,10 @@ export function render(root: HTMLElement): () => void {
         bunlar. Bir harf ters ya da kopuk açılıyorsa
         <code>src/data/starts.ts</code> düzeltilmeli.
       </div>
+      <h2>Küçük harfler · ${ALPHABET.length}</h2>
       <div id="gallery" class="write-gallery"></div>
+      <h2>Büyük harfler · ${caps.length}</h2>
+      <div id="galleryCaps" class="write-gallery"></div>
       <div class="card" id="player" style="text-align:center">
         <div class="fine">Bir harfe dokun, tam hızında oynasın</div>
         <canvas id="stage" style="width:100%;max-width:340px;height:200px"></canvas>
@@ -51,9 +56,11 @@ export function render(root: HTMLElement): () => void {
     const gallery = root.querySelector<HTMLElement>('#gallery')!;
     const stage = root.querySelector<HTMLCanvasElement>('#stage')!;
 
-    for (const ch of ALPHABET) {
+    const capsBox = root.querySelector<HTMLElement>('#galleryCaps')!;
+
+    const addRow = (host: HTMLElement, ch: string, unsureMark: boolean, big: boolean) => {
       const row = document.createElement('button');
-      row.className = `write-row${startOf(ch)?.sure === false ? ' unsure' : ''}`;
+      row.className = `write-row${unsureMark ? ' unsure' : ''}`;
       row.dataset['ch'] = ch;
 
       const label = document.createElement('span');
@@ -68,13 +75,24 @@ export function render(root: HTMLElement): () => void {
         const c = cv.getContext('2d')!;
         c.fillStyle = '#fff';
         c.fillRect(0, 0, cv.width, cv.height);
-        drawWriteFrame(c, ch, t, { x: 20, baseline: 64, fontSize: 56, family: FAMILY });
+        // Büyük harf satırı yüksek; taban çizgisi aşağıda ve punto küçük.
+        drawWriteFrame(c, ch, t, {
+          x: big ? 16 : 20,
+          baseline: big ? 80 : 64,
+          fontSize: big ? 62 : 56,
+          family: FAMILY,
+        });
         row.appendChild(cv);
       }
-      gallery.appendChild(row);
-    }
+      host.appendChild(row);
+    };
 
-    gallery.addEventListener('click', (e) => {
+    for (const ch of ALPHABET) addRow(gallery, ch, startOf(ch)?.sure === false, false);
+    // Büyük harflerin başlangıç noktası HİÇ tanımlı değil (starts.ts küçük
+    // harfler için); hepsi şüpheli sayılıyor.
+    for (const ch of caps) addRow(capsBox, ch, true, true);
+
+    const onPick = (e: Event) => {
       const row = (e.target as HTMLElement).closest<HTMLElement>('[data-ch]');
       if (!row) return;
       const ch = row.dataset['ch']!;
@@ -92,7 +110,9 @@ export function render(root: HTMLElement): () => void {
         loop: true,
       });
       root.querySelector('#player')!.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    });
+    };
+    gallery.addEventListener('click', onPick);
+    capsBox.addEventListener('click', onPick);
   })();
 
   return () => {

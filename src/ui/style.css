@@ -2383,3 +2383,20 @@ button,
   flex: none;
   border-radius: 6px;
 }
+
+/* Alfabe hücresinde iki biçim: büyük solda küçük, küçük sağda büyük. */
+.letter-pair {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.letter-pair b {
+  font-weight: 400;
+  font-size: 0.72em;
+  color: var(--sky-ink);
+}
+
+.letter-pair b.dim {
+  opacity: 0.34;
+}

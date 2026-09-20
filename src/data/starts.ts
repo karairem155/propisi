@@ -68,8 +68,48 @@ export const STARTS: Record<string, StartPoint> = {
   ё: { x: 0.08, y: 0.34, sure: false, note: 'е gibi; noktalar en sona' },
 };
 
+/**
+ * BÜYÜK HARFLERİN BAŞLANGIÇ NOKTALARI.
+ *
+ * Küçük harflerin neredeyse tamamı taban çizgisinden yükselen ince bağlantı
+ * çizgisiyle başlıyor. Büyük harfte öyle değil: bağlanacağı önceki harf yok,
+ * kalem havadan iniyor ve harfin ÜST kısmından başlıyor.
+ *
+ * Bu fark ölçülebilir bir sonuç doğurdu: yazım animasyonu küçük harf
+ * varsayımıyla büyük harfleri ALTTAN açıyordu, yani `А`yı bacağından
+ * başlatıyordu. Yanlış yön öğretmek yerine üç kalıp tanımlandı.
+ *
+ * ⚠️ HEPSİ `sure: false`. Küçük harflerde en azından propisi geleneğinden
+ * türetilmiş bir dayanak vardı; burada yalnız harfin geometrisine bakıldı.
+ * Denetim: #/dev/yazim → Büyük harfler.
+ */
+const CAPITAL_PATTERNS: Record<string, { x: number; y: number; note: string }> = {
+  // Üst tepeden inen: sivri ya da yuvarlak tepeyle başlayanlar
+  tepe: { x: 0.3, y: 0.95, note: 'Tepeden başla, aşağı in' },
+  // Üst soldan sağa giden yatay/eğik giriş
+  ustSol: { x: 0.12, y: 0.92, note: 'Üst soldan başla' },
+  // Ovalin sağ üstü — küçük oval harflerle aynı mantık
+  ovalSag: { x: 0.72, y: 0.82, note: 'Ovalin sağ üstünden, saat yönünün tersine' },
+};
+
+const CAPITAL_KIND: Record<string, keyof typeof CAPITAL_PATTERNS> = {
+  А: 'tepe', Б: 'ustSol', В: 'ustSol', Г: 'ustSol', Д: 'tepe', Е: 'ovalSag',
+  Ё: 'ovalSag', Ж: 'tepe', З: 'ustSol', И: 'tepe', Й: 'tepe', К: 'tepe',
+  Л: 'tepe', М: 'tepe', Н: 'tepe', О: 'ovalSag', П: 'tepe', Р: 'tepe',
+  С: 'ovalSag', Т: 'tepe', У: 'tepe', Ф: 'ovalSag', Х: 'tepe', Ц: 'tepe',
+  Ч: 'tepe', Ш: 'tepe', Щ: 'tepe', Э: 'ustSol', Ю: 'tepe', Я: 'ovalSag',
+};
+
 export function startOf(ch: string): StartPoint | undefined {
-  return STARTS[ch];
+  const own = STARTS[ch];
+  if (own) return own;
+
+  const kind = CAPITAL_KIND[ch];
+  if (kind) {
+    const pat = CAPITAL_PATTERNS[kind]!;
+    return { x: pat.x, y: pat.y, sure: false, note: pat.note };
+  }
+  return undefined;
 }
 
 /** Doğrulanması gereken harfler — kontrol sayfası bunları öne alıyor. */

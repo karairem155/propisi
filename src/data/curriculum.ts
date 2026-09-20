@@ -236,19 +236,28 @@ export function wordsWith(ch: string): string[] {
  * harflerin büyük biçimi ayrı bir şekil ve ayrı bir hamle dizisi. Bu yüzden
  * kendi dersleri var, harflerin arkasına iliştirilmiş değil.
  *
- * Her seviye, o seviyenin harflerinden CÜMLE BAŞI OLABİLECEK olanların
- * büyüğünü öğretiyor — otuz üç büyük harfin hepsini yüklemek gereksiz;
- * cümlede kullanılmayanı öğretmek boş tekrar.
+ * Her harfin büyüğü KENDİ seviyesinde öğretiliyor — küçüğünü öğrenip
+ * büyüğünü hiç görmemek yarım öğretmek olur.
+ *
+ * ÜÇ HARFİN BÜYÜĞÜ YOK: `ъ`, `ы`, `ь`. Rusçada hiçbir kelime bu harflerle
+ * BAŞLAMAZ, dolayısıyla büyük biçimleri pratikte yazılmaz. Fontta varlar ama
+ * öğretmek boş tekrar olurdu. Otuz harf kalıyor.
  */
 export const CAPITALS: Record<string, string[]> = {
-  g1: ['П', 'Т'],
-  g2: ['М', 'Я'],
-  g3: ['У'],
-  g4: ['О', 'С', 'Е', 'А', 'Д', 'Б'],
-  g5: ['В', 'Ы'],
-  g6: ['К', 'Н', 'Ю'],
-  g7: ['З', 'Э', 'Ж', 'Х'],
+  g1: ['И', 'Ш', 'П', 'Р', 'Т', 'Г', 'Й'],
+  g2: ['Л', 'М', 'Я'],
+  g3: ['У', 'Ц', 'Щ', 'Ч'],
+  g4: ['С', 'Е', 'О', 'А', 'Д', 'Б', 'Ё'],
+  g5: ['В'],
+  g6: ['Н', 'Ю', 'К'],
+  g7: ['З', 'Э', 'Ж', 'Х', 'Ф'],
 };
+
+/** Büyük biçimi öğretilen harfler — Alfabe ızgarası bunu gösteriyor. */
+export function hasCapital(lower: string): boolean {
+  const up = lower.toLocaleUpperCase('ru');
+  return Object.values(CAPITALS).some((list) => list.includes(up));
+}
 
 /** `cap:К` biçimindeki konu kimliğinden harfi çıkarır. */
 export function capitalOf(subject: string): string | null {
