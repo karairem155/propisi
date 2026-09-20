@@ -235,6 +235,8 @@ function failedChecks(r: ShapeResult): string[] {
   const out: string[] = [];
   // Tepe sayısı hatası iki yönlü: eksik tepe de fazla tepe de aynı kontrol.
   if (r.missedSection || r.extraSection) out.push('humps');
+  // Boyut ayrı bir hata türü — şekil doğru, ölçek kaymış.
+  if (r.sizeOff) out.push('size');
   if (r.recall < 0.7) out.push('length');
   if (r.precision < 0.65) out.push('shape');
   return out;

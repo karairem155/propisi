@@ -32,6 +32,17 @@ export type ShapeResult = {
   extraSection: boolean;
   /** Hedef dışında kalan mürekkebin en yoğun bandı. */
   worstExtra: number;
+  /**
+   * Yazılanın genişliği / hedefin genişliği.
+   *
+   * NEDEN GEREKLİ: fazla-bölüm denetimi eklenince kelimeyi %18 büyük yazmak
+   * "fazladan yazdın, tepe sayısını kontrol et" diyordu. Oysa o bir BOYUT
+   * hatası — harfler doğru, satıra sığmıyor. İki hata farklı şeyler öğretir,
+   * farklı söylenmeli ve farklı cezalandırılmalı.
+   */
+  sizeRatio: number;
+  /** Boyut hatası mı — şekil doğru ama ölçek kaymış. */
+  sizeOff: boolean;
   /** Atlanan harf bölgeleri kehribar, taşan mürekkep mercan. */
   overlay: HTMLCanvasElement;
 };
@@ -126,14 +137,42 @@ export function scoreShape(opts: ShapeOptions): ShapeResult {
     covered: 1,
     at: 0.5,
   });
-  const extraSection = worstUser.covered < 0.5;
+  const extraSection0 = worstUser.covered < 0.5;
   const worstExtra = worstUser.covered;
+
+  /**
+   * Boyut hatası mı fazla hamle mi?
+   *
+   * Yalnız GENİŞLİĞE bakmak yetmiyor ve bunu ölçerek gördüm: `и` istenirken
+   * `ш` yazmak da genişliği artırıyor, ilk denemede "boyut hatası" sayılıp
+   * cezası hafifledi — yani asıl yakalamak istediğim hata kaçtı.
+   *
+   * Ayırt edici sinyal YÜKSEKLİK: aynı harfi büyük yazmak eni de boyu da
+   * büyütür; başka (daha geniş) bir harf yazmak yalnız eni büyütür, çünkü
+   * ikisi de aynı gövde yüksekliğinde. Oranlar birlikte hareket ediyorsa
+   * boyut, ayrışıyorsa fazla hamle.
+   */
+  const tSpan = spanOf(target, w, h);
+  const uSpan = spanOf(user, w, h);
+  const tTall = spanYOf(target, w, h);
+  const uTall = spanYOf(user, w, h);
+  const sizeRatio = tSpan > 0 && uSpan > 0 ? uSpan / tSpan : 1;
+  const tallRatio = tTall > 0 && uTall > 0 ? uTall / tTall : 1;
+  const together = Math.abs(sizeRatio - tallRatio) < 0.1;
+  const sizeOff = together && (sizeRatio > 1.12 || sizeRatio < 0.85);
+  const extraSection = extraSection0 && !sizeOff;
 
   // Atlanan ya da fazladan yazılan bölüm varsa F1 ne olursa olsun tavanlanır.
   // İkisinden hangisi kötüyse o belirliyor.
   const worstBand = Math.min(weakest.covered, worstUser.covered);
-  const score =
-    missedSection || extraSection ? Math.min(f1, 0.45 + worstBand * 0.2) : f1;
+  let score = f1;
+  if (missedSection || extraSection) {
+    score = Math.min(f1, 0.45 + worstBand * 0.2);
+  } else if (sizeOff && extraSection0) {
+    // Boyut hatası gerçek bir hata (propisi satıra sığmayı öğretiyor) ama
+    // eksik/fazla tepeyle aynı ağırlıkta değil: şekil doğru, ölçek kaymış.
+    score = Math.min(f1, 0.72);
+  }
 
   return {
     precision,
@@ -144,6 +183,8 @@ export function scoreShape(opts: ShapeOptions): ShapeResult {
     missedSection,
     extraSection,
     worstExtra,
+    sizeRatio,
+    sizeOff: sizeOff && extraSection0,
     overlay: buildOverlay(opts.width, opts.height, w, h, target, user, targetTol, userTol),
   };
 }
@@ -277,6 +318,41 @@ function bandCoverage(
   return out.length ? out : [{ covered: 1, at: 0.5 }];
 }
 
+/** Maskenin DİKEY uzanımı — boyut hatasını fazla hamleden ayırıyor. */
+function spanYOf(mask: Uint8Array, w: number, h: number): number {
+  let minY = h;
+  let maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!mask[y * w + x]) continue;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+      break;
+    }
+    for (let x = w - 1; x >= 0; x--) {
+      if (!mask[y * w + x]) continue;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+      break;
+    }
+  }
+  return maxY < minY ? 0 : maxY - minY + 1;
+}
+
+/** Maskenin yatay uzanımı (piksel). Boyut karşılaştırması için. */
+function spanOf(mask: Uint8Array, w: number, h: number): number {
+  let minX = w;
+  let maxX = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!mask[y * w + x]) continue;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+    }
+  }
+  return maxX < minX ? 0 : maxX - minX + 1;
+}
+
 /**
  * Yarıçap r kadar genişletir — tolerans bandı.
  * İki geçişli (yatay + dikey) maksimum filtresi; küçük ızgarada yeterince hızlı.
@@ -376,6 +452,16 @@ export function shapeMessage(
     return {
       title: 'Bir bölümü atladın',
       detail: `${cap(noun)}in ${where} kısmı boş kaldı — kehribar bölgeye bak. Tamamını geç.`,
+    };
+  }
+  // Boyut hatası önce: şekil doğruyken "fazladan yazdın" demek yanıltıcı.
+  if (r.sizeOff) {
+    const big = r.sizeRatio > 1;
+    return {
+      title: big ? 'Çok büyük yazdın' : 'Çok küçük yazdın',
+      detail: big
+        ? `${cap(noun)} kılavuzdan ${Math.round((r.sizeRatio - 1) * 100)}% geniş. Propisi'de harf satıra sığmalı — gövde çalışma satırını doldurur, taşmaz.`
+        : `${cap(noun)} kılavuzdan ${Math.round((1 - r.sizeRatio) * 100)}% dar. Gövde çalışma satırını tam doldurmalı.`,
     };
   }
   // Fazladan yazılan bölüm de en az atlanan kadar ciddi: `и` yerine `ш`
