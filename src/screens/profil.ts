@@ -7,6 +7,7 @@ import { ELEMENTS, LEVELS } from '../data/curriculum';
 import { ensureCard, getCard, putCard, review } from '../srs/scheduler';
 import { Rating } from '../srs/cards';
 import { mascot } from '../ui/mascot';
+import { sfx, setSfxMuted, sfxMuted } from '../audio/sfx';
 
 type Slider = {
   key: keyof PaperConfig;
@@ -72,6 +73,20 @@ export function render(root: HTMLElement): () => void {
                style="width:100%;accent-color:var(--blue)">
         <div style="font-size:11px;color:var(--muted)">
           Sert limit değil, yalnızca öneri (brief 8.3).
+        </div>
+      </div>
+
+      <h2>Ses ve hareket</h2>
+      <div class="card">
+        <label class="toggle">
+          <input type="checkbox" id="sfx" ${sfxMuted() ? '' : 'checked'}> Arayüz sesleri
+        </label>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">
+          Doğru/yanlış tonları. Rusça seslendirme bundan ayrı, hep açık.
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:10px">
+          Animasyonlar cihazının <b>hareketi azalt</b> ayarını izliyor —
+          açıksan uygulama kendiliğinden sakinleşiyor.
         </div>
       </div>
 
@@ -185,6 +200,12 @@ export function render(root: HTMLElement): () => void {
     // Bu düğme BÜTÜN FSRS zamanlamasını siliyor — kullanıcının biriktirdiği
     // ilerlemenin tamamı. Onaysız duruyordu; geliştirici bölümünde olması onu
     // daha az yıkıcı yapmıyor, yanlışlıkla basılması aynı sonucu veriyor.
+    root.querySelector<HTMLInputElement>('#sfx')!.addEventListener('change', (e) => {
+      const on = (e.target as HTMLInputElement).checked;
+      void setSfxMuted(!on);
+      if (on) sfx('correct');
+    });
+
     root.querySelector('#unseed')!.addEventListener('click', async () => {
       const { allCards } = await import('../srs/scheduler');
       const n = (await allCards()).filter((c) => c.fsrs.reps > 0).length;

@@ -22,6 +22,8 @@ import { Rating } from '../srs/cards';
 import { recordReview } from '../srs/stats';
 import { pushResult } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
+import { sfxForScore } from '../audio/sfx';
+import { burst, countUp, shake } from '../ui/celebrate';
 import { getSetting, saveAttempt } from '../db/db';
 import { findWord } from '../data/curriculum';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
@@ -219,6 +221,8 @@ export function render(root: HTMLElement, subject?: string): () => void {
     redraw(true);
     surface.ctx.live.drawImage(result.overlay, 0, 0);
 
+    sfxForScore(result.score, result.score >= PASS);
+
     const msg = shapeMessage(result, 'kelime');
     const pct = (v: number) => Math.round(v * 100);
     const extraReplays = Math.max(0, replays - 1);
@@ -241,6 +245,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
           ${extraReplays ? `${extraReplays} kez tekrar dinledin — zorluk sinyali olarak sayıldı.` : 'Tek dinlemede yazdın.'}
         </p>
       </div>`;
+
+    const card = resultBox.querySelector('.result-card');
+    const scoreEl = resultBox.querySelector<HTMLElement>('.result-score');
+    if (scoreEl) countUp(scoreEl, pct(result.score));
+    if (card) (result.score >= PASS ? burst : shake)(card);
 
     await finish(result.score, extraReplays);
   }

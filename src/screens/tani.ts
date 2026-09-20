@@ -22,6 +22,8 @@ import { recordReview } from '../srs/stats';
 import { pushResult } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
 import { ensureGuideFont } from '../ui/guide';
+import { sfx } from '../audio/sfx';
+import { burst, shake } from '../ui/celebrate';
 
 type Mode = 'toPrint' | 'toCursive' | 'fromSound';
 
@@ -138,6 +140,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
     const picked = btn.dataset['opt']!;
     const ok = picked === q.answer;
     if (ok) correct++;
+    sfx(ok ? 'correct' : 'wrong');
+    const chosen = root.querySelector<HTMLElement>('.quiz-option.right, .quiz-option.wrong');
+    if (chosen) (ok ? burst : shake)(chosen);
 
     for (const b of quizBox.querySelectorAll<HTMLButtonElement>('.quiz-option')) {
       b.disabled = true;

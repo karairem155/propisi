@@ -4,6 +4,7 @@
 import './ui/style.css';
 import { requestPersistence } from './db/db';
 import { initSpeech } from './audio/speech';
+import { initSfx } from './audio/sfx';
 import { mascot } from './ui/mascot';
 import { APP_VERSION } from './types';
 
@@ -91,6 +92,18 @@ const prefixRoutes: Route[] = [
     tab: 'path',
     prefix: '/eslestir/',
     load: async () => (await import('./screens/eslestir')).render,
+  },
+  {
+    title: 'Ders',
+    tab: 'path',
+    prefix: '/ders/',
+    load: async () => (await import('./screens/ders')).render,
+  },
+  {
+    title: 'Cümle',
+    tab: 'path',
+    prefix: '/cumle/',
+    load: async () => (await import('./screens/cumle')).render,
   },
   {
     title: 'Kontrol noktası',
@@ -232,6 +245,8 @@ void requestPersistence();
 
 // Ses altyapısı: ses listesi ve ilk dokunuşta hazırlama (brief 9.1).
 initSpeech();
+// Arayüz sesleri — dosya yok, WebAudio ile sentezleniyor (audio/sfx.ts).
+initSfx();
 
 // Service worker SADECE üretimde. Geliştirmede kayıtlıysa her değişiklikte
 // önbellek temizlemek gerekiyor — o döngüye hiç girme.

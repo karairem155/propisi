@@ -8,6 +8,8 @@
 // hem unutmayı gösterir.
 
 import { ELEMENTS, LEVELS } from '../data/curriculum';
+import { SENTENCES } from '../data/sentences';
+import { lessonHref, lessonSteps } from './ders';
 import { allCards, progressBySubject } from '../srs/scheduler';
 import { mastery } from '../srs/cards';
 import { mascot, type MascotName } from '../ui/mascot';
@@ -16,7 +18,7 @@ import { gridHtml } from './alfabe';
 type NodeState = 'locked' | 'current' | 'done' | 'fading';
 
 type PathNode = {
-  kind: 'element' | 'letter' | 'join' | 'word' | 'checkpoint';
+  kind: 'element' | 'letter' | 'join' | 'word' | 'sentence' | 'checkpoint';
   /** Çalışma ekranına geçerken kullanılan kimlik. */
   subject?: string;
   art: string;
@@ -138,6 +140,10 @@ export function render(root: HTMLElement): () => void {
                 },
               ]
             : []),
+          // Cümle dersi seviyenin kelimelerinden SONRA gelir: harf → bağlantı
+          // → kelime → cümle. Her seviyede cümle yok (ilk üç grupta sesli harf
+          // yetersiz), o yüzden koşullu.
+          ...sentenceNodes(level.id, stateOf),
           cpNode(`cp-${level.id}`, 'grup sınavı'),
         ],
       })),
@@ -252,15 +258,22 @@ function row(node: PathNode, x: number): string {
   if (node.state === 'done') flag = '<span class="flag flag--done">✓</span>';
   if (node.state === 'fading') flag = `<span class="flag flag--fading">${node.due ?? ''}</span>`;
 
+  // Ders kaç adım — "yazıp bitiyor" hissini baştan kırıyor.
+  const steps = node.kind === 'checkpoint' || !node.subject ? 0 : lessonSteps(node.subject);
+  const stepBadge =
+    steps > 1 && node.state !== 'locked' ? `<span class="node-steps">${steps} adım</span>` : '';
+
   const body = `<div class="${cls.join(' ')}">${nodeArt(node)}${flag}</div>
-    <div class="node-label">${node.label}${node.sub ? `<small>${node.sub}</small>` : ''}</div>`;
+    <div class="node-label">${node.label}${stepBadge}${node.sub ? `<small>${node.sub}</small>` : ''}</div>`;
 
   // Kilitli düğüm açılmaz. Kontrol noktası kendi sınav ekranına gider.
   const open = node.state !== 'locked' && Boolean(node.subject);
+  // Kontrol noktası sınav ekranına, diğer her şey DERS KURUCUSUNA gider:
+  // tek bir alıştırma değil, karışık bir dizi açılıyor (bkz. screens/ders.ts).
   const href =
     node.kind === 'checkpoint'
       ? `#/kontrol/${encodeURIComponent(node.subject!)}`
-      : `#/calis/${encodeURIComponent(node.subject!)}`;
+      : lessonHref(node.subject!);
 
   return `<div class="path-row path-row--${node.state}" style="transform:translateX(${x}px)">
     ${open ? `<a class="path-open" href="${href}">${body}</a>` : body}
@@ -278,8 +291,32 @@ function nodeArt(node: PathNode): string {
       ...(node.state === 'locked' ? { color: '#a8b4c7' } : {}),
     });
   }
-  // Harf / çift / kelime: düğümün içi EL YAZISI, altındaki etiket MATBU.
-  // Bu eşleşmenin kendisi öğretiyor.
+  // Harf / çift / kelime / cümle: düğümün içi EL YAZISI, altındaki etiket
+  // MATBU. Bu eşleşmenin kendisi öğretiyor.
+  if (node.kind === 'sentence') {
+    // Cümlenin tamamı düğüme sığmaz; ilk kelimesi geçiyor.
+    return `<span class="art pair">${node.art.split(' ')[0]}</span>`;
+  }
   const long = node.art.length > 1;
   return `<span class="art${long ? ' pair' : ''}">${node.art}</span>`;
+}
+
+/** Seviyenin cümle dersi — yoksa boş dizi. */
+function sentenceNodes(
+  levelId: string,
+  stateOf: (subject: string) => { state: NodeState; due?: number },
+): PathNode[] {
+  const own = SENTENCES.filter((x) => x.after === levelId);
+  const first = own[0];
+  if (!first) return [];
+  return [
+    {
+      kind: 'sentence',
+      subject: first.id,
+      art: first.ru,
+      label: 'Cümle',
+      sub: own.map((x) => x.ru).join(' · '),
+      ...stateOf(first.id),
+    },
+  ];
 }

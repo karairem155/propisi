@@ -1952,3 +1952,223 @@ nav.tabs .tab-badge {
   color: #fff;
   font-size: 13px;
 }
+
+/* ── Hareket ─────────────────────────────────────────────────────────────── */
+/*
+ * Uygulamada iki geçiş vardı, o kadar. Doğru yazınca hiçbir şey olmuyordu.
+ * Buradaki her şey KISA (< 0.7s) ve hepsi prefers-reduced-motion altında
+ * susuyor — hareket duyarlılığı olan biri için titreşen ekran erişilebilirlik
+ * sorunudur, süs değil.
+ */
+
+@keyframes burst-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.4);
+  }
+}
+
+.burst-layer {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.burst-layer i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  animation: burst-fly 0.85s cubic-bezier(0.18, 0.7, 0.3, 1) var(--delay) both;
+}
+
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  18% { transform: translateX(-7px); }
+  38% { transform: translateX(6px); }
+  58% { transform: translateX(-4px); }
+  78% { transform: translateX(3px); }
+}
+
+.is-shaking {
+  animation: shake-x 0.42s ease-in-out both;
+}
+
+@keyframes pop-scale {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.22) rotate(-4deg); }
+  62% { transform: scale(0.95) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.is-popping {
+  animation: pop-scale 0.58s cubic-bezier(0.34, 1.56, 0.5, 1) both;
+  transform-origin: center bottom;
+}
+
+/* Sonuç kartı aşağıdan kayarak gelir — anında belirmesi sonucu "hazır
+   bekliyormuş" gibi gösteriyordu. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-card,
+.exam-list li,
+.queue-card {
+  animation: rise-in 0.34s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* Sınav listesinde sıra sıra gelsin — altı kart aynı anda zıplayınca
+   hangisinin ne olduğu okunmuyor. */
+.exam-list li:nth-child(1) { animation-delay: 0.02s; }
+.exam-list li:nth-child(2) { animation-delay: 0.06s; }
+.exam-list li:nth-child(3) { animation-delay: 0.10s; }
+.exam-list li:nth-child(4) { animation-delay: 0.14s; }
+.exam-list li:nth-child(5) { animation-delay: 0.18s; }
+.exam-list li:nth-child(6) { animation-delay: 0.22s; }
+
+/* Kademe noktası dolduğunda büyüyerek yerleşir. */
+@keyframes dot-fill {
+  0% { transform: scale(0.4); }
+  55% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+.step-dots i.on {
+  animation: dot-fill 0.36s cubic-bezier(0.34, 1.56, 0.5, 1) both;
+}
+
+/* Dokunma geri bildirimi: basılan düğme hafifçe içeri gider. */
+button:active,
+.btn:active,
+.path-open:active,
+.match-item:not(:disabled):active,
+.quiz-option:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+button,
+.btn,
+.path-open,
+.match-item,
+.quiz-option {
+  transition: transform 0.12s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+/* Puan çubukları sıfırdan dolsun. */
+.bar-track i,
+.level-bar i,
+.goal-bar i {
+  transition: width 0.55s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .burst-layer,
+  .is-shaking,
+  .is-popping,
+  .result-card,
+  .exam-list li,
+  .queue-card,
+  .step-dots i.on {
+    animation: none;
+  }
+
+  button,
+  .btn,
+  .path-open,
+  .match-item,
+  .quiz-option,
+  .bar-track i,
+  .level-bar i,
+  .goal-bar i {
+    transition: none;
+  }
+
+  button:active,
+  .btn:active,
+  .path-open:active {
+    transform: none;
+  }
+}
+
+/* Ders bitti rozetı — maskot kutlamanın çapası. */
+.lesson-done {
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+}
+
+/* ── Cümle alıştırması ───────────────────────────────────────────────────── */
+
+.sentence-bar {
+  background: var(--card);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.sentence-ru {
+  font-family: 'Bad Script', cursive;
+  font-size: 26px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+/* Yazılan kelime vurgulu, bitenler soluk yeşil, gelecekler sönük. */
+.sw {
+  transition: color 0.25s ease, opacity 0.25s ease;
+}
+
+.sw--done {
+  color: var(--mint);
+}
+
+/* Alt çizgi denendi ve Bad Script'in uzun kuyrukları yüzünden bir sonraki
+   satıra taşıyordu; arka plan hapı taşmıyor. */
+.sw--now {
+  color: var(--blue);
+  font-weight: 700;
+  background: #fdeccd;
+  border-radius: 6px;
+  padding: 0 5px;
+  box-decoration-break: clone;
+}
+
+.sw--next {
+  opacity: 0.38;
+}
+
+.sentence-tr {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Düğüm altındaki adım rozeti — dersin tek çizimden ibaret olmadığını
+   açmadan önce söylüyor. */
+.node-steps {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 10px;
+  font-weight: 800;
+  vertical-align: middle;
+}

@@ -94,6 +94,7 @@ const PRACTICABLE: CardKind[] = [
   'word:dictation',
   'join',
   'word:read',
+  'sentence',
 ];
 
 /**
@@ -106,6 +107,7 @@ export function practiceHref(card: SrsCard): string {
   if (card.kind === 'letter:hunt') return `#/av/${sub}`;
   if (card.kind === 'word:read') return `#/eslestir/${sub}`;
   if (card.kind === 'word:dictation') return `#/dikte/${sub}`;
+  if (card.kind === 'sentence') return `#/cumle/${sub}`;
   return `#/calis/${sub}`;
 }
 
@@ -113,7 +115,7 @@ export function isPracticable(card: SrsCard): boolean {
   return PRACTICABLE.includes(card.kind);
 }
 
-export type QueueBucket = 'letter' | 'element' | 'join' | 'word' | 'dictation';
+export type QueueBucket = 'letter' | 'element' | 'join' | 'word' | 'dictation' | 'sentence';
 
 export type Queue = {
   cards: SrsCard[];
@@ -124,6 +126,7 @@ export type Queue = {
 };
 
 function bucketOf(card: SrsCard): QueueBucket {
+  if (card.kind === 'sentence') return 'sentence';
   if (card.kind === 'letter:hunt') return 'letter';
   if (card.kind === 'word:dictation') return 'dictation';
   if (card.kind.startsWith('word')) return 'word';
@@ -152,6 +155,7 @@ export async function buildQueue(now = new Date()): Promise<Queue> {
     join: 0,
     word: 0,
     dictation: 0,
+    sentence: 0,
   };
   for (const card of due) counts[bucketOf(card)]++;
 

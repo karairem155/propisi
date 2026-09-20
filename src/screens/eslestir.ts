@@ -15,6 +15,8 @@ import { Rating } from '../srs/cards';
 import { recordReview } from '../srs/stats';
 import { pushResult } from '../srs/session';
 import { ensureGuideFont } from '../ui/guide';
+import { sfx } from '../audio/sfx';
+import { burst, shake } from '../ui/celebrate';
 
 type Pair = { word: WordItem; done: boolean };
 
@@ -119,6 +121,8 @@ export function render(root: HTMLElement, subject?: string): () => void {
     if (wordA === wordB) {
       const pair = pairs.find((x) => x.word.ru === wordA)!;
       pair.done = true;
+      sfx('correct');
+      burst(btn, 9);
       for (const b of buttons) {
         if (b.dataset['w'] === wordA) {
           b.classList.remove('sel');
@@ -136,6 +140,9 @@ export function render(root: HTMLElement, subject?: string): () => void {
     mistakes.set(wordB, (mistakes.get(wordB) ?? 0) + 1);
 
     locked = true;
+    sfx('wrong');
+    shake(btn);
+    shake(first);
     btn.classList.add('wrong');
     first.classList.add('wrong');
     setTimeout(() => {

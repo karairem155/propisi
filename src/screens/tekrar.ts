@@ -33,6 +33,7 @@ const BUCKETS: Record<string, string> = {
   join: 'bağlantı',
   word: 'kelime',
   dictation: 'dikte',
+  sentence: 'cümle',
 };
 
 /** brief 6.2 — teşhis katmanının kontrol adları. */

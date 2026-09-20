@@ -41,10 +41,13 @@ import { nextAfter } from '../srs/flow';
 import { Rating } from '../srs/cards';
 import { delSetting, getSetting, saveAttempt, setSetting } from '../db/db';
 import { recordReview } from '../srs/stats';
-import { pushResult, examActive } from '../srs/session';
+import { pushResult, examActive, playlistMode } from '../srs/session';
 import { speak, speechStatus } from '../audio/speech';
+import { sfx, sfxForScore } from '../audio/sfx';
+import { burst, countUp, pop, shake } from '../ui/celebrate';
 import { APP_VERSION, isStandalone, newId, type InkPoint, type InkStroke } from '../types';
 import { ELEMENTS, LEVELS, findJoin, findWord, levelOfLetter } from '../data/curriculum';
+import { mascot } from '../ui/mascot';
 
 const INK_COLOR = '#14213d';
 /** Bu puanın altı sayılmaz; kademe ilerlemez. */
@@ -80,6 +83,27 @@ const FULL_LESSON: Step[] = [
  */
 const EXAM_LESSON: Step[] = [
   { stage: 3, need: 1, label: 'Sınav — kılavuz yok, tek deneme', alpha: 0 },
+];
+
+/**
+ * Karışık dersin iki yarısı.
+ *
+ * NEDEN BÖLÜNDÜ: tam ders aynı harfi yedi kez arka arkaya yazdırıyordu ve
+ * kullanıcının ilk söylediği şey buydu — "beş kere üst üste yazdırıyorsun".
+ * Yedi tekrar ezber için iyi, motivasyon için felaket.
+ *
+ * Ders artık `screens/ders.ts` tarafından kuruluyor: önce kılavuzla üç
+ * deneme, sonra TANIMA, sonra ezberden iki deneme, sonra HARF AVI. Aynı
+ * toplam iş, dört farklı etkinliğe bölünmüş; arada beyin başka bir kas
+ * kullanıyor.
+ */
+const TRACE_LESSON: Step[] = [
+  { stage: 1, need: 2, label: 'Kılavuzun üstünden geç', alpha: 0.3 },
+  { stage: 2, need: 1, label: 'Kılavuz soluyor', alpha: 0.13 },
+];
+
+const MEMORY_LESSON: Step[] = [
+  { stage: 3, need: 2, label: 'Kılavuz yok — ezberden yaz', alpha: 0 },
 ];
 
 type Info = {
@@ -180,7 +204,14 @@ export function render(root: HTMLElement, subject?: string): () => void {
   // Sınav listesi açıksa bu ekran bir sınav sorusudur (bkz. srs/session.ts).
   // Zayıf nokta serisi de liste kullanıyor ama o ÇALIŞMA — tam ders açılır.
   const exam = examActive();
-  const LESSON = exam ? EXAM_LESSON : FULL_LESSON;
+  const mode = playlistMode();
+  const LESSON = exam
+    ? EXAM_LESSON
+    : mode === 'trace'
+      ? TRACE_LESSON
+      : mode === 'memory'
+        ? MEMORY_LESSON
+        : FULL_LESSON;
   const TOTAL = LESSON.reduce((n, s) => n + s.need, 0);
 
   root.className = 'screen flush';
@@ -544,6 +575,10 @@ export function render(root: HTMLElement, subject?: string): () => void {
     finished = stepIndex >= LESSON.length;
     if (!finished) saveProgress();
 
+    // Sesi HEMEN ver, kart çizilmeden önce. Göz sonuca inene kadar kulak
+    // cevabı almış oluyor — geri bildirimin en hızlı kanalı bu.
+    sfxForScore(result.score, passed);
+
     const noun = info.element ? 'şekil' : info.word ? 'kelime' : 'harf';
     const msg = shapeMessage(result, noun);
     const pct = (v: number) => Math.round(v * 100);
@@ -597,12 +632,24 @@ export function render(root: HTMLElement, subject?: string): () => void {
         }</p>
       </div>`;
 
+    celebrate(passed, result.score);
+
     if (!finished) {
       checkBtn.textContent = passed ? 'Sonraki' : 'Tekrar dene';
       stepLabel.textContent = step().label;
       return;
     }
     await finishLesson(checks);
+  }
+
+  /** Puanı saydır, doğruysa patlat, yanlışsa salla. */
+  function celebrate(passed: boolean, score: number): void {
+    const scoreEl = resultBox.querySelector<HTMLElement>('.result-score');
+    if (scoreEl) countUp(scoreEl, Math.round(score * 100));
+    const card = resultBox.querySelector('.result-card');
+    if (!card) return;
+    if (passed) burst(card, score >= 0.85 ? 20 : 12);
+    else shake(card);
   }
 
   /**
@@ -659,9 +706,13 @@ export function render(root: HTMLElement, subject?: string): () => void {
     const dest = await nextAfter(target);
     if (disposed) return;
 
+    sfx('finish');
     resultBox.insertAdjacentHTML(
       'afterbegin',
-      `<div class="ok" style="text-align:center">
+      `<div class="lesson-done">
+         ${mascot(info.element ? 'oval' : 'kanca', { size: 56, mood: 'cheer' })}
+       </div>
+       <div class="ok" style="text-align:center">
          <b>${exam ? 'Cevap kaydedildi' : 'Ders tamam'}</b> ·
          ${scores.length} deneme, ortalama ${Math.round(average * 100)}
        </div>`,
@@ -669,6 +720,12 @@ export function render(root: HTMLElement, subject?: string): () => void {
 
     nextHash = dest.href;
     checkBtn.textContent = dest.label;
+
+    const done = resultBox.querySelector('.lesson-done');
+    if (done) {
+      pop(done);
+      burst(done, 22);
+    }
   }
 
   return () => {

@@ -87,6 +87,14 @@ type Playlist = {
   items: string[];
   /** Adım başına kısa tür adı ("Yazım", "Dikte") — sonuç ekranı için. */
   labels: string[];
+  /**
+   * Adım başına çalışma ekranı kipi.
+   *
+   * Aynı `#/calis/и` adresi ders içinde iki kez geçiyor: bir kez kılavuzla
+   * (`trace`), bir kez ezberden (`memory`). Adres ikisini ayırt edemiyor,
+   * kip listede taşınıyor.
+   */
+  modes: (string | undefined)[];
   index: number;
   /** Liste bitince gidilecek yer — sonuç ekranı. */
   finishHref: string;
@@ -100,7 +108,7 @@ export function startPlaylist(
   name: string,
   items: string[],
   finishHref: string,
-  opts: { exam?: boolean; labels?: string[] } = {},
+  opts: { exam?: boolean; labels?: string[]; modes?: (string | undefined)[] } = {},
 ): string | null {
   if (!items.length) return null;
   playlist = {
@@ -108,6 +116,7 @@ export function startPlaylist(
     exam: opts.exam ?? false,
     items,
     labels: opts.labels ?? [],
+    modes: opts.modes ?? [],
     index: 0,
     finishHref,
     entryMark: session.entries.length,
@@ -122,6 +131,11 @@ export function playlistActive(): boolean {
 /** Çalışma ekranı buna bakıp ders ile sınav arasında seçim yapıyor. */
 export function examActive(): boolean {
   return playlist?.exam === true;
+}
+
+/** Şu anki adımın kipi — `trace`, `memory` ya da tanımsız (tam ders). */
+export function playlistMode(): string | undefined {
+  return playlist?.modes[playlist.index];
 }
 
 /** Sıradaki adıma geç. Liste bittiyse `null` — çağıran bitiş adresine gider. */

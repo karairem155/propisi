@@ -23,6 +23,8 @@ import { ensureCard, progressBySubject, review } from '../srs/scheduler';
 import { recordReview } from '../srs/stats';
 import { endPlaylist, playlistLabels, playlistResults, startPlaylist } from '../srs/session';
 import { mascot } from '../ui/mascot';
+import { sfx } from '../audio/sfx';
+import { burst, countUp, pop } from '../ui/celebrate';
 
 /** Geçme eşiği — ortalama. Ders eşiği 0.72; sınav biraz daha yukarıda. */
 const PASS_AVERAGE = 0.75;
@@ -324,7 +326,7 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
         ${mascot(passed ? 'oval' : 'ilmek', { size: 78, mood: passed ? 'cheer' : 'think' })}
         <b>${tag ?? 'Kontrol noktası'}</b>
         <h2>${passed ? 'Geçtin' : 'Henüz olmadı'}</h2>
-        <div class="exam-score">${pct(average)}</div>
+        <div class="exam-score">0</div>
       </div>
 
       <div class="card">
@@ -357,6 +359,22 @@ export function renderResult(root: HTMLElement, subject?: string): () => void {
              </a>`
       }
     `;
+
+    // Sınav sonucu tek bir sayıya iniyor; o sayının sayılarak gelmesi
+    // "hesaplandı" hissini veriyor. Geçildiyse seviye açılış fanfarı.
+    const scoreEl = root.querySelector<HTMLElement>('.exam-score');
+    if (scoreEl) countUp(scoreEl, pct(average), 900);
+    const hero = root.querySelector('.exam-hero');
+    if (hero) {
+      pop(hero.querySelector('.mascot') ?? hero);
+      if (passed) {
+        sfx(isLastCheckpoint(target) ? 'finish' : 'levelUp');
+        burst(hero, 26);
+        setTimeout(() => burst(hero, 18), 260);
+      } else {
+        sfx('wrong');
+      }
+    }
   })();
 
   return () => {

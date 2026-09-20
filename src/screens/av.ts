@@ -16,6 +16,8 @@ import { Rating } from '../srs/cards';
 import { recordReview } from '../srs/stats';
 import { playlistActive, pushResult } from '../srs/session';
 import { ensureGuideFont } from '../ui/guide';
+import { sfx } from '../audio/sfx';
+import { burst, shake } from '../ui/celebrate';
 
 const FAMILY = "'Bad Script', cursive";
 const FONT_SIZE = 76;
@@ -180,6 +182,8 @@ export function render(root: HTMLElement, subject?: string): () => void {
       const wrong = [...picked].filter((i) => !expected.has(i));
       const ok = missed.length === 0 && wrong.length === 0;
       results.push(ok);
+      sfx(ok ? 'correct' : 'wrong');
+      (ok ? burst : shake)(canvas);
 
       // Doğru harfleri yeşil, yanlış işaretlenenleri mercan göster.
       ctx.clearRect(0, 0, cssW, cssH);
