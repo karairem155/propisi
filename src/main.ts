@@ -106,6 +106,12 @@ const prefixRoutes: Route[] = [
     load: async () => (await import('./screens/eksik')).render,
   },
   {
+    title: 'Cümle diz',
+    tab: 'path',
+    prefix: '/dizi/',
+    load: async () => (await import('./screens/dizi')).render,
+  },
+  {
     title: 'Cümle okuma',
     tab: 'path',
     prefix: '/oku/',

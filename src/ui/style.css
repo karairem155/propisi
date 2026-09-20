@@ -2279,3 +2279,49 @@ button,
   border-color: var(--coral);
   background: #fdeceb;
 }
+
+/* ── Cümle dizme ─────────────────────────────────────────────────────────── */
+
+.order-line {
+  min-height: 62px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border: 2px dashed var(--line);
+  border-radius: var(--r-md);
+  background: #fbfcfe;
+}
+
+.order-empty {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.order-pool {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.order-word {
+  padding: 8px 14px;
+  min-height: 48px;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--sky-ink);
+}
+
+.order-word.chosen {
+  background: var(--sky-soft);
+  box-shadow: none;
+}
+
+.order-word:disabled {
+  opacity: 0.22;
+}

@@ -16,7 +16,8 @@
 // yedi denemelik diziyi bırakıp TEK, KILAVUZSUZ denemeye geçiyor
 // (screens/calisma.ts → EXAM_LESSON).
 
-import { ELEMENTS, LEVELS, wordsWith, type Level } from '../data/curriculum';
+import { CAPITALS, ELEMENTS, LEVELS, wordsWith, type Level } from '../data/curriculum';
+import { SENTENCES } from '../data/sentences';
 import { checkpointLevel, labelOf } from '../data/labels';
 import { cardId, mastery, Rating } from '../srs/cards';
 import { ensureCard, progressBySubject, review } from '../srs/scheduler';
@@ -91,9 +92,13 @@ async function buildExam(subject: string): Promise<Exam | null> {
 }
 
 /**
- * Altı adım, dört ayrı beceri: yazmak · tanımak · ayırt etmek · duyup yazmak.
+ * Yedi adım, yedi ayrı kanal:
+ *
+ *   yazmak · tanımak · bağlamak · ayırt etmek · büyük harf · imlâ · duymak · okumak
+ *
  * Tek tip sınav tek tip beceriyi ölçer; brief 7.0 aynı gerekçeyle kuyruğu da
- * karıştırıyor.
+ * karıştırıyor. Son adım anlam: seviyede cümle varsa cümle ölçeğinde okuma,
+ * yoksa kelime ölçeğinde eşleştirme.
  */
 function stepsForLevel(level: Level, letters: string[]): ExamStep[] {
   const pick = (i: number): string => letters[i] ?? letters[0] ?? level.letters[0]!.ch;
@@ -123,17 +128,35 @@ function stepsForLevel(level: Level, letters: string[]): ExamStep[] {
     });
   }
 
-  const word = level.words[0];
-  if (word) {
+  // Büyük harf: seviyede varsa sınava girer — cümleler onunla başlıyor.
+  const cap = (CAPITALS[level.id] ?? [])[0];
+  if (cap) {
     steps.push({
-      href: `#/dikte/${encodeURIComponent(word.ru)}`,
-      kind: 'Dikte',
-      label: word.ru,
+      href: `#/calis/${encodeURIComponent(`cap:${cap}`)}`,
+      kind: 'Büyük harf',
+      label: cap,
       cursive: true,
     });
   }
-  // Eşleştirme dört kelime karşılaştırır; üçten azıyla ölçmüyor.
-  if (level.words.length >= 3 && word) {
+
+  const word = level.words[0];
+  if (word) {
+    const enc = encodeURIComponent(word.ru);
+    // İmlâ: yazmadan, sadece harf sırası.
+    steps.push({ href: `#/kur/${enc}`, kind: 'Kelime kur', label: word.ru, cursive: true });
+    steps.push({ href: `#/dikte/${enc}`, kind: 'Dikte', label: word.ru, cursive: true });
+  }
+
+  const sentence = SENTENCES.find((x) => x.after === level.id);
+  if (sentence) {
+    steps.push({
+      href: `#/oku/${encodeURIComponent(sentence.id)}`,
+      kind: 'Cümle okuma',
+      label: sentence.ru,
+      cursive: true,
+    });
+  } else if (level.words.length >= 3 && word) {
+    // Eşleştirme dört kelime karşılaştırır; üçten azıyla ölçmüyor.
     steps.push({
       href: `#/eslestir/${encodeURIComponent(word.ru)}`,
       kind: 'Eşleştirme',

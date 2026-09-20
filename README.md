@@ -13,21 +13,43 @@ ilerlet → sıradaki kart → oturum özeti.
 
 ### Alıştırma türleri
 
-| Tür | Ne yapar | Ayırt edici kontrolü |
+| Tür | Kanal | Ayırt edici kontrolü |
 |---|---|---|
-| **Element** | 6 temel şekil, satır boyunca tekrar | şekil örtüşmesi |
-| **Harf** | 3 kademeli ders (7 deneme) | kademe 3'te kılavuz yok |
-| **Bağlantı** | harf çifti | **kalem kalkmamalı** (безотрывное) |
-| **Kelime** | kelime yazımı, vurgu işaretli | bant kapsaması atlanan harfi yakalar |
-| **Tanıma** | 3 soru, 3 yön | şıklar karışan harflerden |
-| **Harf avı** | kelimede harfi işaretle | ambiguity eğitimi |
-| **Dikte** | duy → yaz, kılavuzsuz | konumdan bağımsız değerlendirme |
-| **Eşleştirme** | el yazısı ↔ anlam, dördü birden | toplu karışma |
-| **Kontrol noktası** | seviye sınavı, 6 adım | kılavuzsuz, tek deneme |
+| **Element** | çizim | 7 temel şekil, satır boyunca tekrar |
+| **Harf** | çizim | kılavuzlu → kılavuzsuz iki kademe |
+| **Büyük harf** | çizim | küçüğünün büyütülmüşü değil, ayrı şekil |
+| **Bağlantı** | çizim | **kalem kalkmamalı** (безотрывное) |
+| **Kelime** | çizim | bant kapsaması atlanan harfi yakalar |
+| **Cümle** | çizim | kelime kelime; büyük harf, boşluk, nokta |
+| **Tanıma** | okuma | 3 yön: el yazısı ↔ matbu ↔ ses |
+| **Harf avı** | okuma | kelimede harfi işaretle — ambiguity eğitimi |
+| **Eksik harf** | okuma | gizli harfi komşularından çöz |
+| **Cümle okuma** | okuma | el yazısı cümle → anlamı |
+| **Kelime kur** | imlâ | harfleri sırayla diz, çizim yok |
+| **Cümle diz** | söz dizimi | kelimeleri doğru sıraya koy |
+| **Dikte** | duyma | duy → yaz, kılavuzsuz |
+| **Eşleştirme** | anlam | el yazısı ↔ anlam, dördü birden |
+| **Kontrol noktası** | sınav | 8 adım, 8 kanal, kılavuzsuz tek deneme |
 
-Ders zinciri kendiliğinden açılıyor — harf: **yaz → tanı → av**,
-kelime: **yaz → dikte → eşleştir**. Hepsi ayrı FSRS kartı, hepsi aynı karışık
-kuyrukta (brief 7.0: "tek tip tekrar sıkıcıdır ve transfer sağlamaz").
+### Ders bir dizidir, tek alıştırma değil
+
+Önce `#/calis/и` aynı harfi **yedi kez** yazdırıyordu. Yedi tekrar kas hafızası
+için iyi, motivasyon için felaket — ve bir dil uygulamasının yaptığı şey değil.
+Dil uygulaması tek beceriyi arka arkaya değil, birbirine bağlı **farklı
+becerileri** sırayla ister. Ders artık `src/screens/ders.ts` tarafından
+kuruluyor:
+
+| Konu | Dizi |
+|---|---|
+| eleman | kılavuzla çiz → ezberden çiz |
+| harf | kılavuzla yaz → **tanı** → ezberden yaz → **harf avı** |
+| büyük harf | kılavuzla yaz → ezberden yaz |
+| bağlantı | kılavuzla yaz → ezberden yaz |
+| kelime | **kur** → yaz → **eksik harf** → **dikte** → **eşleştir** |
+| cümle | **oku** → **diz** → kelime kelime yaz |
+
+Hepsi ayrı FSRS kartı, hepsi aynı karışık kuyrukta (brief 7.0: "tek tip tekrar
+sıkıcıdır ve transfer sağlamaz").
 
 ### Kontrol noktası
 
@@ -37,9 +59,22 @@ Sınav kendi soru tiplerini yazmıyor: yukarıdaki ekranları sırayla çalışt
 soru tipi icat etmek "çalıştığından başka bir şeyden sınav olmak" olurdu, ve
 ikinci bir değerlendirme yolu ikinci bir hata kaynağı demekti.
 
-Dersten farkı çalışma ekranının davranışında: sınavda yedi denemelik dizi
-yerine **tek, kılavuzsuz deneme**. Geçmek için ortalama ≥ 75 ve hiçbir adımda
-50 altına düşmemek gerekiyor. Ayrıntı: `docs/ekranlar.md`.
+Dersten farkı çalışma ekranının davranışında: sınavda **tek, kılavuzsuz
+deneme** ve "tekrar dene" yok. Sekiz adım sekiz kanalı ölçüyor: yazmak ·
+tanımak · bağlamak · ayırt etmek · büyük harf · imlâ · duymak · okumak.
+Geçmek için ortalama ≥ 75 ve hiçbir adımda 50 altına düşmemek gerekiyor.
+Ayrıntı: `docs/ekranlar.md`.
+
+### Ses ve hareket
+
+Arayüz sesleri **dosyasız** — WebAudio ile sentezleniyor (`src/audio/sfx.ts`).
+Sıfır bayt indirme, çevrimdışı garanti, service worker listesi büyümüyor.
+Perdeler rastgele değil: doğru cevap yukarı çıkan aralık, yanlış aşağı inen
+ikili; müzikal yön metni okumadan önce anlamı taşıyor. Profil'den kapatılıyor.
+
+Hareketler (`src/ui/celebrate.ts`) kısa ve hepsi `prefers-reduced-motion`
+altında susuyor — hareket duyarlılığı olan biri için titreşen ekran
+erişilebilirlik sorunudur, süs değil.
 
 ### Değerlendirme
 
@@ -240,17 +275,20 @@ ama satır yapısı korunuyor.
 
 ```
 src/
-  data/      curriculum.ts (müfredat) · starts.ts (başlangıç noktaları)
-             confusables.ts · labels.ts (kimlik → okunur ad)
+  data/      curriculum.ts (müfredat + büyük harfler) · sentences.ts (15 cümle)
+             starts.ts (başlangıç noktaları) · confusables.ts · labels.ts
   srs/       cards.ts · scheduler.ts (ts-fsrs, kuyruk) · session.ts (oturum +
              sınav listesi) · flow.ts (sıradaki adım) · stats.ts
   canvas/    pointer.ts (Pencil girişi) · ink.ts (perfect-freehand) · surface.ts (3 katman)
   ui/        paper.ts · mascot.ts (kadro) · assets.ts (görsel yuvaları) · style.css · fonts/
   db/        db.ts (IndexedDB v2: attempts · settings · cards) · export.ts (JSON yedek)
   grading/   shape.ts (örtüşme + bant kapsaması) · decimate.ts
+  audio/     speech.ts (Rusça TTS) · sfx.ts (arayüz sesleri, sentez)
   screens/   tekrar · patika · alfabe · ilerleme · profil · ozet
-             calisma (element/harf/bağlantı/kelime) · tani · av · dikte · eslestir
-             kontrol (seviye sınavı + sonuç)
+             ders (ders dizisini kurar) · kontrol (seviye sınavı + sonuç)
+             çizim:  calisma (element/harf/büyük harf/bağlantı/kelime) · cumle
+             okuma:  tani · av · eksik · oku
+             diğer:  kur (imlâ) · dizi (söz dizimi) · dikte · eslestir
              + sandbox · test-voice · test-latency · test-scribble · records
   dev/       mascots.ts (kadro galerisi) · baslangic.ts (başlangıç noktası kontrolü)
 tools/

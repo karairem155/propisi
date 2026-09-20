@@ -32,8 +32,10 @@ function stepsFor(subject: string): Step[] {
   // Cümle: önce OKU (anlamını çöz), sonra YAZ. Anlamadığın bir cümleyi
   // kopyalamak kopyalamaktan ibaret kalıyor.
   if (findSentence(subject)) {
+    // Oku → diz → yaz: önce anla, sonra sırayı kur, sonra elinle yaz.
     return [
       { href: `#/oku/${enc}`, label: 'Okuma' },
+      { href: `#/dizi/${enc}`, label: 'Sıralama' },
       { href: `#/cumle/${enc}`, label: 'Yazım' },
     ];
   }

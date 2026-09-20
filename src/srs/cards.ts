@@ -21,6 +21,7 @@ export type CardKind =
   | 'capital' // Büyük harf — küçüğünün büyütülmüşü değil, ayrı şekil
   | 'sentence' // Cümle yazımı — büyük harf, boşluk, nokta
   | 'sentence:read' // El yazısı cümleyi anla
+  | 'sentence:order' // Kelimeleri doğru sıraya koy — söz dizimi
   | 'checkpoint'; // Seviye sınavı — patika kilidini açan düğüm
 
 export type CardId = string; // 'letter:а:write' | 'join:ол' | 'word:мама:dictation'
