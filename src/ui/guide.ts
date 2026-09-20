@@ -4,9 +4,19 @@
 // bugün çalışıyor. Aynı çizim işlevi grading/shape.ts'e de veriliyor ki
 // değerlendirme tam olarak ekranda gördüğün şekle göre yapılsın.
 
+import { cursiveFamily } from './cursive';
 import { baselines, type PaperConfig } from './paper';
 
-const FAMILY = "'Bad Script', cursive";
+// Font artık sabit değil: kılavuzun şekli öğretimin kendisi olduğu için
+// seçilebilir oldu (bkz. ui/cursive.ts).
+const FAMILY_FALLBACK = "'Marck Script', cursive";
+const familyNow = (): string => {
+  try {
+    return cursiveFamily();
+  } catch {
+    return FAMILY_FALLBACK;
+  }
+};
 
 let fontReady: Promise<void> | null = null;
 
@@ -17,7 +27,7 @@ let fontReady: Promise<void> | null = null;
 export function ensureGuideFont(): Promise<void> {
   fontReady ??= (async () => {
     try {
-      await document.fonts.load(`400 100px ${FAMILY}`, 'ишабвгд');
+      await document.fonts.load(`400 100px ${familyNow()}`, 'ишабвгд');
       await document.fonts.ready;
     } catch {
       /* font yüklenmezse yedekle devam — şekil bozuk olur ama çökmez */
@@ -54,16 +64,16 @@ export function measureGuide(
   const maxWidth = width - 48;
   const PROBE = 100;
   ctx.save();
-  ctx.font = `400 ${PROBE}px ${FAMILY}`;
+  ctx.font = `400 ${PROBE}px ${familyNow()}`;
   const ref = ctx.measureText('о');
   const refHeight = ref.actualBoundingBoxAscent + ref.actualBoundingBoxDescent || PROBE * 0.5;
   let fontSize = Math.max(12, (PROBE * paper.rowHeight) / refHeight);
 
-  ctx.font = `400 ${fontSize}px ${FAMILY}`;
+  ctx.font = `400 ${fontSize}px ${familyNow()}`;
   let m = ctx.measureText(text);
   if (m.width > maxWidth) {
     fontSize *= maxWidth / m.width;
-    ctx.font = `400 ${fontSize}px ${FAMILY}`;
+    ctx.font = `400 ${fontSize}px ${familyNow()}`;
     m = ctx.measureText(text);
   }
   ctx.restore();
@@ -75,7 +85,7 @@ export function measureGuide(
     fontSize,
     width: m.width,
     height: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
-    family: FAMILY,
+    family: familyNow(),
   };
 }
 
@@ -107,7 +117,7 @@ export function firstCharWidth(
 ): number {
   if (!text) return box.width;
   ctx.save();
-  ctx.font = `400 ${box.fontSize}px ${FAMILY}`;
+  ctx.font = `400 ${box.fontSize}px ${familyNow()}`;
   const w = ctx.measureText(text[0]!).width;
   ctx.restore();
   return w || box.width;
@@ -155,7 +165,7 @@ export function drawStress(
   if (index < 0 || index >= text.length) return;
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.font = `400 ${box.fontSize}px ${FAMILY}`;
+  ctx.font = `400 ${box.fontSize}px ${familyNow()}`;
   const before = ctx.measureText(text.slice(0, index)).width;
   const ch = ctx.measureText(text[index]!).width;
   const x = box.x + before + ch * 0.55;
@@ -187,7 +197,7 @@ export function drawGuide(
   ctx.save();
   ctx.globalAlpha = style.alpha;
   ctx.fillStyle = style.color ?? '#1d3f8f';
-  ctx.font = `400 ${box.fontSize}px ${FAMILY}`;
+  ctx.font = `400 ${box.fontSize}px ${familyNow()}`;
   ctx.textBaseline = 'alphabetic';
   ctx.fillText(text, box.x, box.baseline);
   ctx.restore();
@@ -202,7 +212,7 @@ export function targetPainter(
   box: GuideBox,
 ): (ctx: CanvasRenderingContext2D) => void {
   return (ctx) => {
-    ctx.font = `400 ${box.fontSize}px ${FAMILY}`;
+    ctx.font = `400 ${box.fontSize}px ${familyNow()}`;
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(text, box.x, box.baseline);
   };

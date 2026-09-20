@@ -89,7 +89,7 @@ export function render(root: HTMLElement): () => void {
       const box = measureGuide(ctx, ch, paper, CELL, CELL);
       box.baseline = baseline;
       ctx.fillStyle = '#14213d';
-      ctx.font = `400 ${box.fontSize}px 'Bad Script', cursive`;
+      ctx.font = `400 ${box.fontSize}px ${box.family}`;
       ctx.textBaseline = 'alphabetic';
       ctx.fillText(ch, box.x, baseline);
 

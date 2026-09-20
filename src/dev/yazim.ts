@@ -14,7 +14,9 @@ import { ensureGuideFont } from '../ui/guide';
 import { drawWriteFrame } from '../ui/write-anim';
 import { playWrite, type WriteAnim } from '../ui/write-anim';
 
-const FAMILY = "'Bad Script', cursive";
+import { cursiveFamily } from '../ui/cursive';
+
+const FAMILY = () => cursiveFamily();
 const STEPS = [0.2, 0.4, 0.6, 0.8, 1];
 
 export function render(root: HTMLElement): () => void {
@@ -80,7 +82,7 @@ export function render(root: HTMLElement): () => void {
           x: big ? 16 : 20,
           baseline: big ? 80 : 64,
           fontSize: big ? 62 : 56,
-          family: FAMILY,
+          family: FAMILY(),
         });
         row.appendChild(cv);
       }
@@ -106,7 +108,7 @@ export function render(root: HTMLElement): () => void {
         x: stage.clientWidth / 2 - 40,
         baseline: 140,
         fontSize: 120,
-        family: FAMILY,
+        family: FAMILY(),
         loop: true,
       });
       root.querySelector('#player')!.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

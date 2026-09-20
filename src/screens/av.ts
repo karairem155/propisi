@@ -19,7 +19,13 @@ import { ensureGuideFont } from '../ui/guide';
 import { sfx } from '../audio/sfx';
 import { burst, shake } from '../ui/celebrate';
 
-const FAMILY = "'Bad Script', cursive";
+import { cursiveFamily } from '../ui/cursive';
+
+/**
+ * Kılavuzla aynı font — seçilebilir (ui/cursive.ts).
+ * Modül yüklenirken YAKALAMIYORUZ: ayar değişince eski font kalırdı.
+ */
+const FAMILY = () => cursiveFamily();
 const FONT_SIZE = 76;
 
 type Span = { ch: string; x0: number; x1: number; index: number };
@@ -54,7 +60,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
       <a class="back" href="#/">✕</a>
       <div class="practice-title">
         <b class="as-text">Harf avı</b>
-        <span id="hint">Bütün <b style="font-family:${FAMILY};font-size:19px">${target}</b> harflerini işaretle</span>
+        <span id="hint">Bütün <b style="font-family:${FAMILY()};font-size:19px">${target}</b> harflerini işaretle</span>
       </div>
       <span style="width:44px"></span>
     </div>
@@ -127,11 +133,11 @@ export function render(root: HTMLElement, subject?: string): () => void {
     ctx.scale(dpr, dpr);
 
     let size = FONT_SIZE;
-    ctx.font = `400 ${size}px ${FAMILY}`;
+    ctx.font = `400 ${size}px ${FAMILY()}`;
     let total = ctx.measureText(word).width;
     if (total > cssW - 24) {
       size *= (cssW - 24) / total;
-      ctx.font = `400 ${size}px ${FAMILY}`;
+      ctx.font = `400 ${size}px ${FAMILY()}`;
       total = ctx.measureText(word).width;
     }
     const x0 = (cssW - total) / 2;
@@ -147,7 +153,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         ctx.fillRect(s.x0 - 2, baseline - size * 0.78, s.x1 - s.x0 + 4, size * 1.05);
       }
       ctx.fillStyle = '#14213d';
-      ctx.font = `400 ${size}px ${FAMILY}`;
+      ctx.font = `400 ${size}px ${FAMILY()}`;
       ctx.textBaseline = 'alphabetic';
       ctx.fillText(word, x0, baseline);
     };
@@ -197,7 +203,7 @@ export function render(root: HTMLElement, subject?: string): () => void {
         ctx.fillRect(s.x0 - 2, baseline - size * 0.78, s.x1 - s.x0 + 4, size * 1.05);
       }
       ctx.fillStyle = '#14213d';
-      ctx.font = `400 ${size}px ${FAMILY}`;
+      ctx.font = `400 ${size}px ${FAMILY()}`;
       ctx.fillText(word, x0, baseline);
 
       const wrongChars = wrong.map((i) => spans[i]!.ch);

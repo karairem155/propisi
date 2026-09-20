@@ -5,6 +5,7 @@ import './ui/style.css';
 import { requestPersistence } from './db/db';
 import { initSpeech } from './audio/speech';
 import { initSfx } from './audio/sfx';
+import { initCursive } from './ui/cursive';
 import { mascot } from './ui/mascot';
 import { APP_VERSION } from './types';
 
@@ -272,6 +273,10 @@ void requestPersistence();
 initSpeech();
 // Arayüz sesleri — dosya yok, WebAudio ile sentezleniyor (audio/sfx.ts).
 initSfx();
+
+// El yazısı fontu seçimi. Kılavuz, değerlendirme hedefi ve animasyon hep
+// bunu okuyor, yani ilk boyamadan ÖNCE uygulanması gerekiyor.
+void initCursive();
 
 // Service worker SADECE üretimde. Geliştirmede kayıtlıysa her değişiklikte
 // önbellek temizlemek gerekiyor — o döngüye hiç girme.

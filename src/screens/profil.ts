@@ -8,6 +8,7 @@ import { ensureCard, getCard, putCard, review } from '../srs/scheduler';
 import { Rating } from '../srs/cards';
 import { mascot } from '../ui/mascot';
 import { sfx, setSfxMuted, sfxMuted } from '../audio/sfx';
+import { CURSIVE_FONTS, currentCursive, setCursive } from '../ui/cursive';
 
 type Slider = {
   key: keyof PaperConfig;
@@ -74,6 +75,33 @@ export function render(root: HTMLElement): () => void {
         <div style="font-size:11px;color:var(--muted)">
           Sert limit değil, yalnızca öneri (brief 8.3).
         </div>
+      </div>
+
+      <h2>El yazısı fontu</h2>
+      <div class="note">
+        Bu font yalnız görünüm değil: <b>kılavuzun şekli, değerlendirmenin
+        hedefi ve yazım animasyonu</b> hep buradan çıkıyor. Yanlış font yanlış
+        harf öğretir. Aşağıdaki örneklerde en zor harfler var — hangisi gerçek
+        propisi'ye yakınsa onu seç.
+      </div>
+      <div class="font-picker" id="fontPick">
+        ${CURSIVE_FONTS.map(
+          (f) => `
+          <button class="font-option${f.id === currentCursive().id ? ' on' : ''}" data-font="${f.id}">
+            <div class="font-head">
+              <b>${f.label}</b>
+              <small>${f.license}</small>
+            </div>
+            <div class="font-sample" style="font-family:${f.family}">бвгджктф</div>
+            <div class="font-sample sm" style="font-family:${f.family}">Кот спит на окне.</div>
+            <div class="fine" style="margin:0">${f.note}</div>
+          </button>`,
+        ).join('')}
+      </div>
+      <div class="note">
+        Gerçek okul propisi fontu (ParaType «Прописи») <b>ticari</b> —
+        depoya konamaz. Satın alırsan <code>src/ui/fonts/</code> içine koyup
+        listeye bir satır eklemek yeterli, başka hiçbir yer değişmiyor.
       </div>
 
       <h2>Ses ve hareket</h2>
@@ -205,6 +233,16 @@ export function render(root: HTMLElement): () => void {
     // Bu düğme BÜTÜN FSRS zamanlamasını siliyor — kullanıcının biriktirdiği
     // ilerlemenin tamamı. Onaysız duruyordu; geliştirici bölümünde olması onu
     // daha az yıkıcı yapmıyor, yanlışlıkla basılması aynı sonucu veriyor.
+    root.querySelector('#fontPick')!.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-font]');
+      if (!btn) return;
+      void setCursive(btn.dataset['font']!).then(() => {
+        for (const b of root.querySelectorAll('[data-font]')) {
+          b.classList.toggle('on', b === btn);
+        }
+      });
+    });
+
     root.querySelector<HTMLInputElement>('#sfx')!.addEventListener('change', (e) => {
       const on = (e.target as HTMLInputElement).checked;
       void setSfxMuted(!on);

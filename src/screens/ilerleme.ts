@@ -176,7 +176,7 @@ export function render(root: HTMLElement): () => void {
       <h2>Yazının gelişimi</h2>
       <div class="note">
         Her denemenin ham hamleleri kaydediliyor (brief 6.3) — yani
-        <b>ilk haftaki <span style="font-family:'Bad Script',cursive;font-size:19px">ш</span></b>
+        <b>ilk haftaki <span style="font-family:var(--cursive);font-size:19px">ш</span></b>
         ile <b>bugünkü</b> yan yana çizilebilir. Korpus biriktikçe burada açılacak.
       </div>
     `;

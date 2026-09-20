@@ -86,7 +86,7 @@ export function gridHtml(progress: Progress): string {
           (l) => `<div style="margin-bottom:10px">
             <b style="font-size:13px">${l.tag} · ${l.ru}</b>
             <div class="chips" style="margin-top:6px">
-              ${l.joins.map((j) => `<span class="chip" style="font-family:'Bad Script',cursive;font-size:17px">${j}</span>`).join('')}
+              ${l.joins.map((j) => `<span class="chip" style="font-family:var(--cursive);font-size:17px">${j}</span>`).join('')}
             </div>
           </div>`,
         ).join('')}
