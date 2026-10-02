@@ -127,6 +127,8 @@ main.screen {
   overflow: auto;
   padding: 4px var(--pad) calc(var(--nav-h) + 16px);
   -webkit-overflow-scrolling: touch;
+  /* Kaydırma bu kapta kalsın, gövdeye zincirlenip "takılmasın". */
+  overscroll-behavior-y: contain;
 }
 
 /* iPad'de içerik kenardan kenara uzuyor ve satırlar okunmaz uzunluğa
@@ -679,8 +681,21 @@ main.screen.flush > .scroll {
   max-width: 430px;
   margin: 0 auto;
   padding: 4px 0 8px;
-  /* Satırlar translateX ile kaydırılıyor; taşmayı kes. */
-  overflow-x: hidden;
+  /*
+   * Satırlar translateX ile kaydırılıyor; taşmayı kes — ama KAYDIRMA KABI
+   * YARATMADAN.
+   *
+   * Burada `overflow-x: hidden` vardı. CSS kuralı gereği bu `overflow-y`'yi
+   * de `auto` yapıyor (ölçüldü) ve patika, asıl kaydırıcı olan main'in
+   * içinde İKİNCİ bir kaydırma kabı oluyordu. iOS Safari'de dokunuş iç
+   * kapta başlayınca hareket bazen dış kaba aktarılmıyor: kullanıcının
+   * "patika takılıyor, bazen kaymıyor" dediği şey.
+   *
+   * `clip` keser ama kaydırma kabı yaratmaz. Eski Safari için `contain:
+   * paint` aynı kırpmayı yapıyor.
+   */
+  overflow-x: clip;
+  contain: paint;
 }
 
 /* İmza zemin: propisi satır çizgileri + eğik çizgiler. */
@@ -799,21 +814,42 @@ main.screen.flush > .scroll {
   border-color: #fff;
   border-width: 7px;
   transform: scale(1.09);
-  animation: nodePulse 2.1s ease-in-out infinite;
+  position: relative;
+}
+
+/*
+ * Nabız artık ayrı bir halkada, yalnız transform + opacity ile.
+ *
+ * Eskiden düğümün kendi box-shadow'u canlandırılıyordu: box-shadow her karede
+ * YENİDEN BOYAMA ister, 73 düğümlü uzun bir sayfada bu kaydırmayı sarsıyordu.
+ * transform/opacity bileşimci katmanında çalışır, boyama yok.
+ */
+.node--current::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+  animation: nodePulse 2.1s ease-out infinite;
+  will-change: transform, opacity;
 }
 
 @keyframes nodePulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5), var(--shadow);
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
   }
-  55% {
-    box-shadow: 0 0 0 11px rgba(255, 255, 255, 0), var(--shadow);
+  70%,
+  100% {
+    transform: scale(1.32);
+    opacity: 0;
   }
 }
 
+
 @media (prefers-reduced-motion: reduce) {
-  .node--current {
+  .node--current::after {
     animation: none;
   }
 }
