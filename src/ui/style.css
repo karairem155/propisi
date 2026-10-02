@@ -46,7 +46,7 @@
 
   /* El yazısı fontu — ui/cursive.ts açılışta ayardan okuyup üzerine yazıyor.
      Buradaki değer yalnız ayar yüklenene kadar geçerli. */
-  --cursive: 'Marck Script', cursive;
+  --cursive: 'Russkopis', cursive;
   --shadow-sm: 0 2px 8px rgba(10, 30, 70, 0.1);
 }
 

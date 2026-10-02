@@ -58,6 +58,12 @@ export type ShapeResult = {
  * Bu, tepe saymanın glyph verisi gerektirmeyen karşılığı.
  */
 const BANDS = 9;
+/**
+ * Satır denendi (9×3 hücre) ve geri alındı: `ш`/`щ`'yi yakalamadı, %10 büyük
+ * yazılmış `мама`'yı ise 96'dan 53'e düşürdü. Dikey fark aşağıda boy
+ * oranıyla yakalanıyor.
+ */
+const ROWS = 1;
 /** Bandın "harf var" sayılması için gereken asgari hedef mürekkebi. */
 const BAND_MIN_INK = 0.25;
 
@@ -82,19 +88,46 @@ export type ShapeOptions = {
    * Kayma güvenli, ölçek değil.
    */
   align?: 'none' | 'translate';
+  /**
+   * Hedefi fontun ORTA ÇİZGİSİNE indirip kalem kalınlığında yeniden çiz.
+   *
+   * NEDEN: Russkopis gerçek bir el yazısı fontu ve kalın-ince kontrastlı —
+   * gövde çizgileri ~15 px, kavisler kıl inceliğinde. Puanlama çözünürlüğünde
+   * kalın gövdeler + tolerans, gövdeler arasındaki boşluğu TAMAMEN
+   * dolduruyordu. Ölçüldü: `т` ("m", kavis üstte) istenirken `ш` (kavis altta)
+   * yazmak 100 alıyordu; `и`/`п` da öyle. Harfleri ayıran şey kavisin YERİ
+   * ve o bilgi kalın gövdelerin altında kayboluyordu.
+   *
+   * Pencil'le yazan birinin ürettiği şey zaten sabit kalınlıkta bir çizgi;
+   * hedef de öyle olunca karşılaştırma adil oluyor. Varsayılan açık.
+   */
+  centerline?: boolean;
 };
+
+/** Kullanıcının kalem kalınlığı (canvas/ink.ts → PEN_STYLE.size). */
+const PEN_PX = 7;
 
 const MISSED = [242, 166, 59]; // --amber
 const OVERFLOW = [242, 112, 95]; // --coral
 
 export function scoreShape(opts: ShapeOptions): ShapeResult {
-  const scale = opts.scale ?? 0.34;
+  // 0.34'te kıl çizgiler bir pikselin altına düşüp kopuyordu; orta çizgi
+  // çıkarmak için yarım çözünürlük gerekiyor.
+  const scale = opts.scale ?? 0.5;
   const w = Math.max(1, Math.round(opts.width * scale));
   const h = Math.max(1, Math.round(opts.height * scale));
   const tol = Math.max(1, Math.round((opts.tolerance ?? 14) * scale));
 
-  const target = rasterize(w, h, scale, opts.drawTarget);
+  let target = rasterize(w, h, scale, opts.drawTarget);
   let user = rasterize(w, h, scale, opts.drawUser);
+  if (opts.centerline !== false) {
+    // İKİ TARAF da orta çizgiye inip aynı kalem kalınlığında çiziliyor:
+    // hedefin kalın-ince kontrastı da, kullanıcının basınca göre değişen
+    // çizgi kalınlığı da puanı etkilemesin — karşılaştırılan şey YOL.
+    const penR = Math.max(1, Math.round((PEN_PX / 2) * scale));
+    target = dilate(thin(target, w, h), w, h, penR);
+    user = dilate(thin(user, w, h), w, h, penR);
+  }
 
   if (opts.align === 'translate') {
     const shift = centerDelta(target, user, w, h);
@@ -129,7 +162,7 @@ export function scoreShape(opts: ShapeOptions): ShapeResult {
     covered: 1,
     at: 0.5,
   });
-  const missedSection = weakest.covered < 0.5;
+  const missedSection0 = weakest.covered < 0.5;
 
   // Aynı analiz ters yönde: yazılanın hangi bandı hedefin DIŞINDA kalıyor.
   const userBands = bandCoverage(user, targetTol, w, h);
@@ -160,7 +193,27 @@ export function scoreShape(opts: ShapeOptions): ShapeResult {
   const tallRatio = tTall > 0 && uTall > 0 ? uTall / tTall : 1;
   const together = Math.abs(sizeRatio - tallRatio) < 0.1;
   const sizeOff = together && (sizeRatio > 1.12 || sizeRatio < 0.85);
-  const extraSection = extraSection0 && !sizeOff;
+
+  /**
+   * Kuyruk ve kol: eni aynı kalıp BOYU değişen yazı.
+   *
+   * `щ` = `ш` + tabanın altında kuyruk; `ц` = `и` + kuyruk. Bant analizi
+   * sütunlara bakıyor ve kuyruk son gövdeyle aynı sütunda — ölçüldü: `ш`
+   * istenirken `щ` yazmak 99 alıyordu. Oysa en de boy da biliniyor: aynı
+   * harfi büyük yazmak ikisini birlikte büyütür (boyut hatası, yukarıda),
+   * kuyruk eklemek yalnız BOYU uzatır.
+   */
+  //
+  // "En sabit mi" diye sormak yetmedi: kalem kalınlığına genişletme oranları
+  // 1'e doğru büküyor (%15 küçük `и` haksız düşüyordu) ve `д`nin kuyruğu eni
+  // de biraz değiştirdiği için `д`/`а` kaçıyordu. Doğru soru: boy, enden ne
+  // kadar AYRIŞIYOR? Düzgün büyütmede ikisi birlikte gider, ayrışma ~0.
+  const diverge = tallRatio - sizeRatio;
+  const tailExtra = diverge > 0.16;
+  const tailMissing = diverge < -0.16;
+
+  const extraSection = (extraSection0 && !sizeOff) || tailExtra;
+  const missedSection = missedSection0 || tailMissing;
 
   // Atlanan ya da fazladan yazılan bölüm varsa F1 ne olursa olsun tavanlanır.
   // İkisinden hangisi kötüyse o belirliyor.
@@ -282,40 +335,94 @@ function bandCoverage(
   w: number,
   h: number,
 ): { covered: number; at: number }[] {
-  const ink = new Array<number>(BANDS).fill(0);
-  const hit = new Array<number>(BANDS).fill(0);
+  /**
+   * 9 sütun × 3 satır hücre. Satırlar sonradan eklendi: yalnız sütunla
+   * `ш` istenirken `щ` yazmak 99 alıyordu — fazlası tabanın ALTINDAKİ
+   * kuyruk ve sütun bandı onu son gövdeyle aynı yerde görüyordu.
+   */
+  const cells = BANDS * ROWS;
+  const ink = new Array<number>(cells).fill(0);
+  const hit = new Array<number>(cells).fill(0);
 
-  // Bantlar harfin sınırlarına göre bölünür, tuvale göre değil.
+  // Hücreler harfin sınırlarına göre bölünür, tuvale göre değil.
   let minX = w;
   let maxX = -1;
+  let minY = h;
+  let maxY = -1;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (target[y * w + x]) {
         if (x < minX) minX = x;
         if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
       }
     }
   }
   if (maxX < minX) return [{ covered: 1, at: 0.5 }];
-  const span = maxX - minX + 1;
+  const spanX = maxX - minX + 1;
+  const spanY = maxY - minY + 1;
 
-  for (let y = 0; y < h; y++) {
+  for (let y = minY; y <= maxY; y++) {
+    const row = Math.min(ROWS - 1, Math.floor(((y - minY) / spanY) * ROWS));
     for (let x = minX; x <= maxX; x++) {
       const i = y * w + x;
       if (!target[i]) continue;
-      const b = Math.min(BANDS - 1, Math.floor(((x - minX) / span) * BANDS));
-      ink[b]!++;
-      if (userTol[i]) hit[b]!++;
+      const col = Math.min(BANDS - 1, Math.floor(((x - minX) / spanX) * BANDS));
+      const c = row * BANDS + col;
+      ink[c]!++;
+      if (userTol[i]) hit[c]!++;
     }
   }
 
   const peak = Math.max(...ink);
   const out: { covered: number; at: number }[] = [];
-  for (let b = 0; b < BANDS; b++) {
-    if (ink[b]! < peak * BAND_MIN_INK) continue;
-    out.push({ covered: hit[b]! / ink[b]!, at: (b + 0.5) / BANDS });
+  for (let c = 0; c < cells; c++) {
+    if (ink[c]! < peak * BAND_MIN_INK) continue;
+    out.push({ covered: hit[c]! / ink[c]!, at: ((c % BANDS) + 0.5) / BANDS });
   }
   return out.length ? out : [{ covered: 1, at: 0.5 }];
+}
+
+/**
+ * Zhang–Suen inceltmesi — mürekkebi 1 piksellik orta çizgiye indirir.
+ * Kıl çizgiler korunur (zaten incedirler), kalın gövdeler incelir.
+ */
+function thin(src: Uint8Array, w: number, h: number): Uint8Array {
+  const d = Uint8Array.from(src);
+  const doomed: number[] = [];
+  const nb = (x: number, y: number): number[] => {
+    const at = (dx: number, dy: number) => d[(y + dy) * w + (x + dx)]!;
+    return [at(0, -1), at(1, -1), at(1, 0), at(1, 1), at(0, 1), at(-1, 1), at(-1, 0), at(-1, -1)];
+  };
+  for (let pass = 0; pass < 80; pass++) {
+    let changed = false;
+    for (const step of [0, 1]) {
+      doomed.length = 0;
+      for (let y = 1; y < h - 1; y++) {
+        for (let x = 1; x < w - 1; x++) {
+          const i = y * w + x;
+          if (!d[i]) continue;
+          const n = nb(x, y);
+          let b = 0;
+          for (const v of n) b += v;
+          if (b < 2 || b > 6) continue;
+          let a = 0;
+          for (let k = 0; k < 8; k++) if (n[k] === 0 && n[(k + 1) % 8] === 1) a++;
+          if (a !== 1) continue;
+          const [p2, , p4, , p6, , p8] = n as [number, number, number, number, number, number, number, number];
+          if (step === 0 ? p2 * p4 * p6 || p4 * p6 * p8 : p2 * p4 * p8 || p2 * p6 * p8) continue;
+          doomed.push(i);
+        }
+      }
+      if (doomed.length) {
+        changed = true;
+        for (const i of doomed) d[i] = 0;
+      }
+    }
+    if (!changed) break;
+  }
+  return d;
 }
 
 /** Maskenin DİKEY uzanımı — boyut hatasını fazla hamleden ayırıyor. */

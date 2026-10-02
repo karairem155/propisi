@@ -8,7 +8,7 @@ import { ensureCard, getCard, putCard, review } from '../srs/scheduler';
 import { Rating } from '../srs/cards';
 import { mascot } from '../ui/mascot';
 import { sfx, setSfxMuted, sfxMuted } from '../audio/sfx';
-import { CURSIVE_FONTS, currentCursive, setCursive } from '../ui/cursive';
+import { CURSIVE_FONTS, currentCursive, measureJoins, setCursive } from '../ui/cursive';
 
 type Slider = {
   key: keyof PaperConfig;
@@ -92,10 +92,9 @@ export function render(root: HTMLElement): () => void {
               <b>${f.label}</b>
               <small>${f.license}</small>
             </div>
-            <div class="font-join ${f.joins ? 'yes' : 'no'}">
-              ${f.joins ? '✓ harfleri birleştiriyor' : '✕ harfleri ayrı basıyor'}
-            </div>
+            <div class="font-join" data-join="${f.id}">ölçülüyor…</div>
             <div class="font-sample" style="font-family:${f.family}">бвгджктф</div>
+            <div class="font-sample sm" style="font-family:${f.family}">мама шишка молоко</div>
             <div class="font-sample sm" style="font-family:${f.family}">Кот спит на окне.</div>
             <div class="fine" style="margin:0">${f.note}</div>
           </button>`,
@@ -236,6 +235,20 @@ export function render(root: HTMLElement): () => void {
     // Bu düğme BÜTÜN FSRS zamanlamasını siliyor — kullanıcının biriktirdiği
     // ilerlemenin tamamı. Onaysız duruyordu; geliştirici bölümünde olması onu
     // daha az yıkıcı yapmıyor, yanlışlıkla basılması aynı sonucu veriyor.
+    // "Birleştiriyor mu" elle yazılmıyor, ölçülüyor — bir kez yanlış
+    // etiketlemiştim (bkz. ui/cursive.ts → measureJoins).
+    for (const f of CURSIVE_FONTS) {
+      void measureJoins(f).then((breaks) => {
+        const el = root.querySelector<HTMLElement>(`[data-join="${f.id}"]`);
+        if (!el) return;
+        el.classList.add(breaks === 0 ? 'yes' : 'no');
+        el.textContent =
+          breaks === 0
+            ? '✓ kelimeyi tek parça yazıyor'
+            : `✕ harfler ayrı — 4 örnek kelimede ${breaks} kopukluk`;
+      });
+    }
+
     root.querySelector('#fontPick')!.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-font]');
       if (!btn) return;

@@ -101,6 +101,18 @@
   src: url('./fonts/BadScript-Regular.ttf') format('truetype');
 }
 
+/* Russkopis — X11 lisansı (MIT benzeri), MihailJP; glifler George Douros'un
+   Symbola'sından. Ölçülen tek font ki kelimeyi TEK PARÇA basıyor ve harf
+   biçimleri gerçek Rus el yazısı: т "m" gibi, д "g" gibi, г "r" gibi.
+   Lisans metni: tools/fonts/Russkopis-LICENSE.txt */
+@font-face {
+  font-family: 'Russkopis';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/Russkopis-Normalny.otf') format('opentype');
+}
+
 /* Marck Script — OFL 1.1, Denis Masharov. Bad Script'ten daha el yazısına
    yakın: в, д, б harflerinde matbu biçim yerine bağlantılı biçim veriyor. */
 @font-face {

@@ -9,7 +9,7 @@ import { baselines, type PaperConfig } from './paper';
 
 // Font artık sabit değil: kılavuzun şekli öğretimin kendisi olduğu için
 // seçilebilir oldu (bkz. ui/cursive.ts).
-const FAMILY_FALLBACK = "'Marck Script', cursive";
+const FAMILY_FALLBACK = "'Russkopis', cursive";
 const familyNow = (): string => {
   try {
     return cursiveFamily();
@@ -71,16 +71,46 @@ export function measureGuide(
 
   ctx.font = `400 ${fontSize}px ${familyNow()}`;
   let m = ctx.measureText(text);
-  if (m.width > maxWidth) {
-    fontSize *= maxWidth / m.width;
+  // Genişlik: ilerleme değil MÜREKKEP genişliği — el yazısı fontunda giriş
+  // ve çıkış kıl çizgileri ilerleme genişliğinin dışına taşabiliyor.
+  const inkW = (mm: TextMetrics) =>
+    Math.max(mm.width, (mm.actualBoundingBoxLeft || 0) + (mm.actualBoundingBoxRight || mm.width));
+  if (inkW(m) > maxWidth) {
+    fontSize *= maxWidth / inkW(m);
     ctx.font = `400 ${fontSize}px ${familyNow()}`;
     m = ctx.measureText(text);
   }
+
+  /**
+   * Hangi satıra oturtulacak?
+   *
+   * Eskiden HEP ilk satıra oturuyordu ve üstünde tek satırlık boşluk vardı.
+   * Bad Script'te yetiyordu; Russkopis gerçek bir el yazısı fontu ve kolları
+   * (б в д, büyük harfler) gövdenin iki katı uzun. Ölçüldü: `в` 27 piksel,
+   * `Б` 32 piksel TUVALİN DIŞINA çıkıyordu — yüzey ne kadar yüksek olursa
+   * olsun, çünkü satır seçimi yüksekliğe hiç bakmıyordu.
+   *
+   * Artık kolun sığdığı ilk satır seçiliyor. Hiçbir satıra sığmıyorsa (kısa
+   * ekran) punto, harf tuvale sığana kadar küçülüyor.
+   */
+  const PAD = 6;
+  let asc = m.actualBoundingBoxAscent || fontSize * 0.7;
+  let desc = m.actualBoundingBoxDescent || fontSize * 0.25;
+  if (asc + desc > height - PAD * 2) {
+    const k = (height - PAD * 2) / (asc + desc);
+    fontSize *= k;
+    ctx.font = `400 ${fontSize}px ${familyNow()}`;
+    m = ctx.measureText(text);
+    asc = m.actualBoundingBoxAscent || fontSize * 0.7;
+    desc = m.actualBoundingBoxDescent || fontSize * 0.25;
+  }
   ctx.restore();
 
-  const line = baselines(paper, height)[0] ?? height * 0.55;
+  const lines = baselines(paper, height);
+  const fits = lines.find((b) => b - asc >= PAD && b + desc <= height - PAD);
+  const line = fits ?? Math.min(Math.max(asc + PAD, lines[0] ?? height * 0.55), height - desc - PAD);
   return {
-    x: Math.max(16, (width - m.width) / 2),
+    x: Math.max(16, (width - m.width) / 2 + (m.actualBoundingBoxLeft || 0)),
     baseline: line,
     fontSize,
     width: m.width,
