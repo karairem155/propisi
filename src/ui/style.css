@@ -2655,3 +2655,93 @@ button,
 .pick-cell--due {
   border-color: rgba(242, 166, 59, 0.6);
 }
+
+/* ── Boş defter ──────────────────────────────────────────────────────────── */
+
+.defter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.defter-input {
+  flex: 1 1 140px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 24px;
+  box-shadow: var(--shadow-sm);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.defter-input::placeholder {
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.defter-bar #dice {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 18px;
+}
+
+.defter-mode {
+  flex: 1 1 100%;
+  margin: 0;
+  /* .segmented iki sütunlu; burada üç kip var ve ikinci satıra kırılıyordu. */
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.defter-mode button {
+  font-size: 12px;
+}
+
+/* Çubuklar esnek düzende EZİLMESİN: ölçüldü, çip satırı 0 piksele
+   sıkışıyordu — yüzey bütün boşluğu almaya çalışınca. */
+.defter-bar,
+.defter-chips {
+  flex: none;
+}
+
+.defter-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-height: 38px;
+}
+
+.defter-chips .chip {
+  flex: none;
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 20px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  box-shadow: none;
+}
+
+/* Defter yüzeyi bütün boşluğu alıyor: birden çok satır yazılacak ve altta
+   sonuç kartı yok. Kısa ekran kuralı (main.screen.flush .ink-surface) ders
+   yüzeyini 140px'e indiriyor; defter için daha özgül seçici gerekiyor. */
+main.screen.flush .ink-surface.defter-surface {
+  flex: 1 1 auto;
+  min-height: 160px;
+}
+
+.toolbar #prev,
+.toolbar #next {
+  min-width: 44px;
+  padding: 8px 10px;
+  font-size: 20px;
+  line-height: 1;
+}

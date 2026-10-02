@@ -39,12 +39,16 @@ const TABS: { tab: string; href: string; icon: string; label: string }[] = [
   { tab: 'review', href: '#/', icon: 'repeat', label: 'Tekrar' },
   { tab: 'path', href: '#/patika', icon: 'path', label: 'Patika' },
   { tab: 'modules', href: '#/moduller', icon: 'grid', label: 'Modüller' },
+  // Boş defter — serbest, puansız tekrar. Kullanıcının isteğiyle ayrı sekme:
+  // ders bitince değil, istediği an açılabilmeli.
+  { tab: 'notebook', href: '#/defter', icon: 'pen', label: 'Defter' },
   { tab: 'profile', href: '#/profil', icon: 'user', label: 'Profil' },
 ];
 
 const routes: Record<string, Route> = {
   '/': { title: 'Tekrar', tab: 'review', load: async () => (await import('./screens/tekrar')).render },
   '/patika': { title: 'Patika', tab: 'path', load: async () => (await import('./screens/patika')).render },
+  '/defter': { title: 'Defter', tab: 'notebook', load: async () => (await import('./screens/defter')).render },
   '/ozet': { title: 'Oturum özeti', tab: 'review', load: async () => (await import('./screens/ozet')).render },
 
   // Modüller: patika sırayı dayatıyor, burası seçim veriyor (screens/moduller.ts).
