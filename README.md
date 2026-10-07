@@ -116,8 +116,15 @@ kelime %18 büyük            72 BOYUT       6px kayma            100
 
 Rus el yazısının asıl kuralı harflerin BİRLEŞMESİ. Üç yerde denetleniyor:
 
-- **Font birleştiriyor mu** — `мама`, `шишка`, `лишишь` basılıp karşılaştırıldı.
-  Marck Script birleştiriyor, Bad Script ayrı basıyor. Seçim ekranında yazıyor.
+- **Font birleştiriyor mu** — ölçülüyor, elle yazılmıyor (`measureJoins()`):
+  kelime basılıp harfler arası mürekkepsiz sütunlar sayılıyor. Russkopis 0,
+  Marck ve Bad Script kelime başına 3–5 kopukluk.
+- **Kelime içi biçimler** — Russkopis'te `л м я э` her yerde süs topuyla
+  başlıyordu; kelime içinde önceki harfin kuyruğu topa çarpıp kalem kalkmış
+  gibi görünüyordu (boş sütun sayımı bunu göremez, top boşluğu kapatıyor).
+  Fonta topsuz `.medi` biçimleri ve `calt` kuralı eklendi
+  (`tools/fonts/medial-forms.py`). Şekil propisi'nin bağlantı tablosundan
+  (`ял ям ол вл оя`): kanca korunuyor, bağlantı aşağı inip kancaya giriyor.
 - **Bağlantı türü** — önceki harf gövde üstünde bitiyorsa (`о б в ъ ы ь`)
   **üst bağlantı**, değilse **alt bağlantı**. Mekanik kural, tahmin değil;
   ders ekranında hangi türü çalıştığın yazıyor.
@@ -129,10 +136,13 @@ Rus el yazısının asıl kuralı harflerin BİRLEŞMESİ. Üç yerde denetleniy
 Bu font tipografi değil: kılavuzun şekli, değerlendirmenin hedefi ve yazım
 animasyonu hep buradan çıkıyor. Yanlış font yanlış harf öğretir.
 
-Kullanıcı uyardı, ölçüldü ve doğrulandı: Bad Script'te `б в г д ж к т ф`
-matbu biçimin italiği ve harfler hiç birleşmiyor. Varsayılan **Marck Script**
-oldu (OFL, kendi sunucumuzda). Ama hiçbir açık lisanslı font doğrulanmış
-школьная пропись değil, o yüzden seçim **Profil → El yazısı fontu**'nda.
+Varsayılan **Russkopis** (X11 lisansı, MihailJP / George Douros): gerçek
+Rus el yazısı biçimleri (`т` "m", `д` "g", `г` "r") ve kelimeyi tek parça
+basan, ölçülmüş tek açık lisanslı font. Bad Script'te `б в г д ж к т ф`
+matbu biçimin italiği; Marck Script'i bir ara "birleştiriyor" diye varsayılan
+yapmıştım — ekran görüntüsüne bakarak, yanlıştı. Seçim **Profil → El yazısı
+fontu**'nda. Fontu değiştirince `python tools/fonts/medial-forms.py` özgün
+dosyadan (`tools/fonts/Russkopis-Normalny.orig.otf`) yeniden üretir.
 
 Gerçek okul propisi fontu (ParaType «Прописи») ticari; satın alınırsa
 `src/ui/fonts/` içine konup `ui/cursive.ts` listesine bir satır eklemek yeterli.
